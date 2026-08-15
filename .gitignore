@@ -10,6 +10,7 @@ target/
 .project
 .classpath
 .factorypath
+agents.md
 
 .env
 .env.*

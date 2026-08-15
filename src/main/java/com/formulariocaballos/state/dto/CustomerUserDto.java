@@ -2,11 +2,14 @@ package com.formulariocaballos.state.dto;
 
 public record CustomerUserDto(
     Long id,
-    String name,
+    String firstName,
+    String lastName,
     String phone,
     String email,
-    String password,
     String role,
     Integer bonuses,
-    String createdAt
+    boolean emailVerified,
+    boolean active,
+    String createdAt,
+    String updatedAt
 ) {}

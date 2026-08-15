@@ -4,15 +4,15 @@ services:
     container_name: formulario-caballos-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: formulariocaballos
-      POSTGRES_USER: formulariocaballos
-      POSTGRES_PASSWORD: formulariocaballos_secret
+      POSTGRES_DB: ${POSTGRES_DB:-formulariocaballos}
+      POSTGRES_USER: ${POSTGRES_USER:-formulariocaballos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-formulariocaballos_secret}
     ports:
       - "5433:5432"
     volumes:
       - formulario_caballos_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U formulariocaballos -d formulariocaballos"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-formulariocaballos} -d ${POSTGRES_DB:-formulariocaballos}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,10 +23,21 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/formulariocaballos
-      SPRING_DATASOURCE_USERNAME: formulariocaballos
-      SPRING_DATASOURCE_PASSWORD: formulariocaballos_secret
-      CORS_ORIGINS: http://localhost:4200
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_AUTH: ${MAIL_AUTH}
+      MAIL_STARTTLS: ${MAIL_STARTTLS}
+      MAIL_FROM: ${MAIL_FROM}
+      FRONTEND_URL: ${FRONTEND_URL}
     depends_on:
       db:
         condition: service_healthy

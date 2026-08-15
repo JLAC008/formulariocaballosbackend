@@ -58,6 +58,10 @@ public class Booking {
     @Column(nullable = false)
     private String payment;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false)
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
     @Column(name = "customer_name", nullable = false)
     private String customerName;
 

@@ -6,6 +6,7 @@ import com.formulariocaballos.booking.Booking;
 import com.formulariocaballos.booking.BookingRepository;
 import com.formulariocaballos.customer.CustomerUser;
 import com.formulariocaballos.customer.CustomerUserRepository;
+import com.formulariocaballos.customer.Role;
 import com.formulariocaballos.experience.Experience;
 import com.formulariocaballos.experience.ExperienceRepository;
 import com.formulariocaballos.state.dto.AppStateDto;
@@ -13,6 +14,7 @@ import com.formulariocaballos.state.dto.BookingDto;
 import com.formulariocaballos.state.dto.CustomerUserDto;
 import com.formulariocaballos.state.dto.ExperienceDto;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -21,6 +23,7 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
@@ -30,15 +33,18 @@ public class AppStateService {
     private final ExperienceRepository experienceRepository;
     private final BookingRepository bookingRepository;
     private final ObjectMapper objectMapper;
+    private final PasswordEncoder passwordEncoder;
 
     public AppStateService(CustomerUserRepository customerUserRepository,
                            ExperienceRepository experienceRepository,
                            BookingRepository bookingRepository,
-                           ObjectMapper objectMapper) {
+                           ObjectMapper objectMapper,
+                           PasswordEncoder passwordEncoder) {
         this.customerUserRepository = customerUserRepository;
         this.experienceRepository = experienceRepository;
         this.bookingRepository = bookingRepository;
         this.objectMapper = objectMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public AppStateDto getState() {
@@ -104,13 +110,16 @@ public class AppStateService {
     private CustomerUserDto toCustomerDto(CustomerUser user) {
         return new CustomerUserDto(
             user.getId(),
-            user.getName(),
+            user.getFirstName(),
+            user.getLastName(),
             user.getPhone(),
             user.getEmail(),
-            user.getPassword(),
-            user.getRole(),
+            user.getRole().name(),
             user.getBonuses(),
-            user.getCreatedAt().toString()
+            user.isEmailVerified(),
+            user.isActive(),
+            user.getCreatedAt().toString(),
+            user.getUpdatedAt().toString()
         );
     }
 
@@ -151,14 +160,26 @@ public class AppStateService {
     private CustomerUser toCustomerEntity(CustomerUserDto dto) {
         CustomerUser user = new CustomerUser();
         user.setId(dto.id());
-        user.setName(valueOrDefault(dto.name(), ""));
+        user.setFirstName(valueOrDefault(dto.firstName(), ""));
+        user.setLastName(valueOrDefault(dto.lastName(), ""));
         user.setPhone(valueOrDefault(dto.phone(), ""));
         user.setEmail(valueOrDefault(dto.email(), ""));
-        user.setPassword(valueOrDefault(dto.password(), ""));
-        user.setRole(valueOrDefault(dto.role(), "CUSTOMER"));
+        user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+        user.setRole(parseRole(dto.role()));
         user.setBonuses(dto.bonuses() == null ? 0 : Math.max(0, dto.bonuses()));
+        user.setEmailVerified(dto.emailVerified());
+        user.setActive(dto.active());
         user.setCreatedAt(parseDateTime(dto.createdAt()));
+        user.setUpdatedAt(parseDateTime(dto.updatedAt()));
         return user;
+    }
+
+    private Role parseRole(String role) {
+        try {
+            return role == null ? Role.USER : Role.valueOf(role.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return Role.USER;
+        }
     }
 
     private Booking toBookingEntity(BookingDto dto, Map<Long, CustomerUser> users, Map<Long, Experience> experiences) {

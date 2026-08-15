@@ -1,0 +1,8 @@
+ALTER TABLE customer_users RENAME COLUMN name TO first_name;
+ALTER TABLE customer_users RENAME COLUMN password TO password_hash;
+ALTER TABLE customer_users ADD COLUMN last_name VARCHAR(160) NOT NULL DEFAULT '';
+ALTER TABLE customer_users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE customer_users ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE customer_users ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+UPDATE customer_users SET role = 'USER' WHERE role = 'CUSTOMER';
+ALTER TABLE customer_users ALTER COLUMN role SET DEFAULT 'USER';
