@@ -22,7 +22,7 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "${EXTERNAL_PORT:-8081}:8083"
+      - "8083:8081"
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://db:5432/formulariocaballos}
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-formulariocaballos}
