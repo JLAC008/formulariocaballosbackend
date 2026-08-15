@@ -2,9 +2,9 @@ spring:
   application:
     name: formulario-caballos-backend
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/formulariocaballos}
-    username: ${SPRING_DATASOURCE_USERNAME:formulariocaballos}
-    password: ${SPRING_DATASOURCE_PASSWORD:formulariocaballos_secret}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/${DB_NAME:formulariocaballos}}
+    username: ${DB_USER:formulariocaballos}
+    password: ${DB_PASSWORD:formulariocaballos_secret}
     driver-class-name: org.postgresql.Driver
   jpa:
     defer-datasource-initialization: true

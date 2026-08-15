@@ -4,15 +4,15 @@ services:
     container_name: formulario-caballos-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-formulariocaballos}
-      POSTGRES_USER: ${POSTGRES_USER:-formulariocaballos}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-formulariocaballos_secret}
+      POSTGRES_DB: ${DB_NAME:-formulariocaballos}
+      POSTGRES_USER: ${DB_USER:-formulariocaballos}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-formulariocaballos_secret}
     ports:
       - "5433:5432"
     volumes:
       - formulario_caballos_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-formulariocaballos} -d ${POSTGRES_DB:-formulariocaballos}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-formulariocaballos} -d ${DB_NAME:-formulariocaballos}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -23,9 +23,10 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      # Conectamos usando el nombre de BD configurado
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-formulariocaballos}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-formulariocaballos}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-formulariocaballos_secret}
       CORS_ORIGINS: ${CORS_ORIGINS}
       JWT_SECRET: ${JWT_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
