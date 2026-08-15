@@ -3,6 +3,7 @@ services:
     image: postgres:16-alpine
     container_name: formulario-caballos-postgres
     restart: unless-stopped
+    profiles: ["local"]
     environment:
       POSTGRES_DB: ${DB_NAME:-formulariocaballos}
       POSTGRES_USER: ${DB_USER:-formulariocaballos}
@@ -23,8 +24,7 @@ services:
     ports:
       - "8081:8081"
     environment:
-      # Conectamos usando el nombre de BD configurado
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-formulariocaballos}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://db:5432/formulariocaballos}
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-formulariocaballos}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-formulariocaballos_secret}
       CORS_ORIGINS: ${CORS_ORIGINS}
@@ -42,6 +42,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+        required: false
 
 volumes:
   formulario_caballos_pgdata:

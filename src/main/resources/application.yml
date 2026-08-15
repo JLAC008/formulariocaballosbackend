@@ -1,4 +1,8 @@
 spring:
+  docker:
+    compose:
+      profiles:
+        active: local
   application:
     name: formulario-caballos-backend
   datasource:
