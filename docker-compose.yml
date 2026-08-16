@@ -24,9 +24,11 @@ services:
     ports:
       - "8083:8081"
     environment:
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://db:5432/formulariocaballos}
-      SPRING_DATASOURCE_USERNAME: ${DB_USER:-formulariocaballos}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-formulariocaballos_secret}
+      DB_HOST: ${DB_HOST:-localhost}
+      DB_PORT: ${DB_PORT:-5433}
+      DB_NAME: ${DB_NAME:-formulariocaballos}
+      DB_USER: ${DB_USER:-formulariocaballos}
+      DB_PASSWORD: ${DB_PASSWORD:-formulariocaballos_secret}
       CORS_ORIGINS: ${CORS_ORIGINS:-${FRONTEND_URL}}
       JWT_SECRET: ${JWT_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL}

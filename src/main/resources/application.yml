@@ -6,7 +6,7 @@ spring:
   application:
     name: formulario-caballos-backend
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/${DB_NAME:formulariocaballos}}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:formulariocaballos}
     username: ${DB_USER:formulariocaballos}
     password: ${DB_PASSWORD:formulariocaballos_secret}
     driver-class-name: org.postgresql.Driver
