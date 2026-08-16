@@ -45,6 +45,13 @@ services:
       db:
         condition: service_healthy
         required: false
+    networks:
+      - default
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
 
 volumes:
   formulario_caballos_pgdata:
