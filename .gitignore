@@ -15,6 +15,7 @@ agents.md
 .env
 .env.*
 !.env.example
+uploads/
 
 .mvn/wrapper/maven-wrapper.jar
 
