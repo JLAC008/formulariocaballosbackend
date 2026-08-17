@@ -69,6 +69,10 @@ public class AppStateService {
         List<ExperienceDto> experiences = state.experiences() == null ? List.of() : state.experiences();
         List<CustomerUserDto> users = state.users() == null ? List.of() : state.users();
         List<BookingDto> bookings = state.bookingHistory() == null ? List.of() : state.bookingHistory();
+        Map<Long, String> passwordHashesById = customerUserRepository.findAll().stream()
+            .collect(java.util.stream.Collectors.toMap(CustomerUser::getId, CustomerUser::getPasswordHash));
+        Map<String, String> passwordHashesByEmail = customerUserRepository.findAll().stream()
+            .collect(java.util.stream.Collectors.toMap(user -> user.getEmail().toLowerCase(), CustomerUser::getPasswordHash));
 
         bookingRepository.deleteAll();
         customerUserRepository.deleteAll();
@@ -81,7 +85,7 @@ public class AppStateService {
             .collect(java.util.stream.Collectors.toMap(Experience::getId, experienceRepository::save));
 
         Map<Long, CustomerUser> usersByClientId = users.stream()
-            .map(this::toCustomerEntity)
+            .map(user -> toCustomerEntity(user, passwordHashesById, passwordHashesByEmail))
             .collect(java.util.stream.Collectors.toMap(CustomerUser::getId, customerUserRepository::save));
 
         bookings.stream()
@@ -157,14 +161,14 @@ public class AppStateService {
         return experience;
     }
 
-    private CustomerUser toCustomerEntity(CustomerUserDto dto) {
+    private CustomerUser toCustomerEntity(CustomerUserDto dto, Map<Long, String> passwordHashesById, Map<String, String> passwordHashesByEmail) {
         CustomerUser user = new CustomerUser();
         user.setId(dto.id());
         user.setFirstName(valueOrDefault(dto.firstName(), ""));
         user.setLastName(valueOrDefault(dto.lastName(), ""));
         user.setPhone(valueOrDefault(dto.phone(), ""));
         user.setEmail(valueOrDefault(dto.email(), ""));
-        user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+        user.setPasswordHash(existingPasswordHash(dto, passwordHashesById, passwordHashesByEmail));
         user.setRole(parseRole(dto.role()));
         user.setBonuses(dto.bonuses() == null ? 0 : Math.max(0, dto.bonuses()));
         user.setEmailVerified(dto.emailVerified());
@@ -172,6 +176,14 @@ public class AppStateService {
         user.setCreatedAt(parseDateTime(dto.createdAt()));
         user.setUpdatedAt(parseDateTime(dto.updatedAt()));
         return user;
+    }
+
+    private String existingPasswordHash(CustomerUserDto dto, Map<Long, String> passwordHashesById, Map<String, String> passwordHashesByEmail) {
+        String hash = dto.id() == null ? null : passwordHashesById.get(dto.id());
+        if (hash == null && dto.email() != null) {
+            hash = passwordHashesByEmail.get(dto.email().toLowerCase());
+        }
+        return hash == null ? passwordEncoder.encode(UUID.randomUUID().toString()) : hash;
     }
 
     private Role parseRole(String role) {
