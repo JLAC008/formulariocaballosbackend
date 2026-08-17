@@ -44,9 +44,13 @@ public class BookingService {
         Experience experience = experiences.findById(request.experienceId())
             .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
         if (!Boolean.TRUE.equals(experience.getActive())) throw new BusinessException("Experience is not active");
-        if (bookings.existsByExperienceIdAndDateKeyAndHourAndStatusNot(
-            experience.getId(), request.dateKey(), request.hour(), ReservationStatus.CANCELLED)) {
-            throw new BusinessException("That booking slot is already reserved");
+        if (bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(
+            user.getId(), request.dateKey(), request.hour(), ReservationStatus.CANCELLED)) {
+            throw new BusinessException("Ya tienes una reserva para esa fecha y hora.");
+        }
+        if (bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(
+            experience.getId(), request.dateKey(), request.hour(), ReservationStatus.CANCELLED) >= capacityFor(experience)) {
+            throw new BusinessException("Esta hora ya tiene el aforo completo.");
         }
 
         Booking booking = new Booking();
@@ -101,5 +105,10 @@ public class BookingService {
 
     private CustomerUser user(String email) {
         return users.findByEmailIgnoreCase(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    private int capacityFor(Experience experience) {
+        String type = experience.getType();
+        return ("routes".equalsIgnoreCase(type) || "route".equalsIgnoreCase(type)) ? 8 : 5;
     }
 }

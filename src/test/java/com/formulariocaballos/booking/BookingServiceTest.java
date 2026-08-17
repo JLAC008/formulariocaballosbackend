@@ -45,7 +45,7 @@ class BookingServiceTest {
         experience = new Experience();
         experience.setId(2L);
         experience.setTitle("Trail ride");
-        experience.setType("route");
+        experience.setType("routes");
         experience.setPrice(new BigDecimal("25.00"));
         experience.setActive(true);
     }
@@ -55,7 +55,8 @@ class BookingServiceTest {
         CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
-        when(bookings.existsByExperienceIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(false);
+        when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(false);
+        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(0L);
         when(payments.charge(any(), any())).thenReturn(PaymentStatus.APPROVED);
         when(bookings.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -67,15 +68,44 @@ class BookingServiceTest {
     }
 
     @Test
-    void rejectsDuplicateSlotBeforeCharging() {
+    void rejectsUserBookingAnotherExperienceAtSameDateAndHourBeforeCharging() {
         CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
-        when(bookings.existsByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(true);
+        when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(true);
 
         assertThatThrownBy(() -> service.create("rider@example.com", request))
             .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
-            .hasMessageContaining("already reserved");
+            .hasMessageContaining("Ya tienes una reserva");
+        verifyNoInteractions(payments);
+    }
+
+    @Test
+    void rejectsFullRouteAtEightBookingsBeforeCharging() {
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
+        when(experiences.findById(2L)).thenReturn(Optional.of(experience));
+        when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
+        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(8L);
+
+        assertThatThrownBy(() -> service.create("rider@example.com", request))
+            .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
+            .hasMessageContaining("aforo completo");
+        verifyNoInteractions(payments);
+    }
+
+    @Test
+    void rejectsFullLessonAtFiveBookingsBeforeCharging() {
+        experience.setType("lessons");
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
+        when(experiences.findById(2L)).thenReturn(Optional.of(experience));
+        when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
+        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(5L);
+
+        assertThatThrownBy(() -> service.create("rider@example.com", request))
+            .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
+            .hasMessageContaining("aforo completo");
         verifyNoInteractions(payments);
     }
 }

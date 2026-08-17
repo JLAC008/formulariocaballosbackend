@@ -7,6 +7,9 @@ import java.util.List;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUserIdOrderByCreatedAtDesc(Long userId);
 
-    boolean existsByExperienceIdAndDateKeyAndHourAndStatusNot(
+    long countByExperienceIdAndDateKeyAndHourAndStatusNot(
         Long experienceId, java.time.LocalDate dateKey, String hour, ReservationStatus status);
+
+    boolean existsByUserIdAndDateKeyAndHourAndStatusNot(
+        Long userId, java.time.LocalDate dateKey, String hour, ReservationStatus status);
 }
