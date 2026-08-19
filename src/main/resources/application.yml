@@ -57,6 +57,14 @@ app:
     currency: ${STRIPE_CURRENCY:eur}
     bonus-pack-amount: ${STRIPE_BONUS_PACK_AMOUNT:10}
     bonus-pack-price-cents: ${STRIPE_BONUS_PACK_PRICE_CENTS:16000}
+  whatsapp:
+    enabled: ${WHATSAPP_ENABLED:false}
+    access-token: ${WHATSAPP_ACCESS_TOKEN:}
+    phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+    admin-to: ${WHATSAPP_ADMIN_TO:}
+    template-booking: ${WHATSAPP_TEMPLATE_BOOKING:booking_confirmation}
+    template-cancellation: ${WHATSAPP_TEMPLATE_CANCELLATION:booking_cancellation}
+    template-language: ${WHATSAPP_TEMPLATE_LANGUAGE:es_ES}
 server:
   port: ${SERVER_PORT:8081}
 logging:
