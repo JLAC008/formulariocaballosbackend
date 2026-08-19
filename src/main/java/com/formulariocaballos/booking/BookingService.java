@@ -52,6 +52,9 @@ public class BookingService {
             experience.getId(), request.dateKey(), request.hour(), ReservationStatus.CANCELLED) >= capacityFor(experience)) {
             throw new BusinessException("Esta hora ya tiene el aforo completo.");
         }
+        if (currentBonuses(user) < 1) {
+            throw new BusinessException("No tienes bonos suficientes.");
+        }
 
         Booking booking = new Booking();
         booking.setId(System.currentTimeMillis());
@@ -70,6 +73,8 @@ public class BookingService {
         booking.setPaymentStatus(payments.charge(experience.getPrice(), booking.getPayment()));
         if (booking.getPaymentStatus() != PaymentStatus.APPROVED) throw new BusinessException("Payment declined");
         booking.setStatus(ReservationStatus.CONFIRMED);
+        user.setBonuses(currentBonuses(user) - 1);
+        users.save(user);
         booking = bookings.save(booking);
         notifications.bookingCreated(booking);
         return BookingResponse.from(booking);
@@ -85,6 +90,7 @@ public class BookingService {
         Booking booking = bookings.findById(id).orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
         if (!booking.getUser().getEmail().equalsIgnoreCase(email)) throw new BusinessException("Booking does not belong to user");
         if (booking.getStatus() == ReservationStatus.CANCELLED) return BookingResponse.from(booking);
+        refundBonus(booking);
         booking.setStatus(ReservationStatus.CANCELLED);
         booking = bookings.save(booking);
         notifications.bookingCancelled(booking);
@@ -97,6 +103,9 @@ public class BookingService {
     @Transactional
     public BookingResponse updateStatus(Long id, ReservationStatus status) {
         Booking booking = bookings.findById(id).orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+        if (status == ReservationStatus.CANCELLED && booking.getStatus() != ReservationStatus.CANCELLED) {
+            refundBonus(booking);
+        }
         booking.setStatus(status);
         booking = bookings.save(booking);
         if (status == ReservationStatus.CANCELLED) notifications.bookingCancelled(booking);
@@ -110,5 +119,19 @@ public class BookingService {
     private int capacityFor(Experience experience) {
         String type = experience.getType();
         return ("routes".equalsIgnoreCase(type) || "route".equalsIgnoreCase(type)) ? 8 : 5;
+    }
+
+    private int currentBonuses(CustomerUser user) {
+        return user.getBonuses() == null ? 0 : Math.max(0, user.getBonuses());
+    }
+
+    private void refundBonus(Booking booking) {
+        CustomerUser user = booking.getUser();
+        if (user == null) {
+            return;
+        }
+
+        user.setBonuses(currentBonuses(user) + 1);
+        users.save(user);
     }
 }

@@ -42,6 +42,7 @@ class BookingServiceTest {
         user.setFirstName("Ada");
         user.setLastName("Lovelace");
         user.setPhone("+34600000000");
+        user.setBonuses(3);
         experience = new Experience();
         experience.setId(2L);
         experience.setTitle("Trail ride");
@@ -64,7 +65,50 @@ class BookingServiceTest {
 
         assertThat(result.paymentStatus()).isEqualTo(PaymentStatus.APPROVED);
         assertThat(result.status()).isEqualTo(ReservationStatus.CONFIRMED);
+        assertThat(result.remainingBonuses()).isEqualTo(2);
+        assertThat(user.getBonuses()).isEqualTo(2);
+        verify(users).save(user);
         verify(notifications).bookingCreated(any(Booking.class));
+    }
+
+    @Test
+    void rejectsBookingWithoutBonusesBeforeCharging() {
+        user.setBonuses(0);
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
+        when(experiences.findById(2L)).thenReturn(Optional.of(experience));
+        when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
+        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(0L);
+
+        assertThatThrownBy(() -> service.create("rider@example.com", request))
+            .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
+            .hasMessageContaining("bonos suficientes");
+        verifyNoInteractions(payments);
+    }
+
+    @Test
+    void refundsBonusWhenCustomerCancelsConfirmedBooking() {
+        Booking booking = new Booking();
+        booking.setId(20L);
+        booking.setUser(user);
+        booking.setExperience(experience);
+        booking.setType(experience.getType());
+        booking.setTitle(experience.getTitle());
+        booking.setDateKey(LocalDate.of(2026, 9, 1));
+        booking.setHour("11:00");
+        booking.setAmount(experience.getPrice());
+        booking.setPaymentStatus(PaymentStatus.APPROVED);
+        booking.setStatus(ReservationStatus.CONFIRMED);
+        when(bookings.findById(20L)).thenReturn(Optional.of(booking));
+        when(bookings.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.cancel("rider@example.com", 20L);
+
+        assertThat(result.status()).isEqualTo(ReservationStatus.CANCELLED);
+        assertThat(result.remainingBonuses()).isEqualTo(4);
+        assertThat(user.getBonuses()).isEqualTo(4);
+        verify(users).save(user);
+        verify(notifications).bookingCancelled(booking);
     }
 
     @Test
