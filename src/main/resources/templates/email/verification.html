@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="x-apple-disable-message-reformatting">
+    <title>Confirma tu cuenta</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#27272a;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:32px 16px;">
+    <tr>
+        <td align="center">
+            <table role="presentation" width="100%" style="max-width:560px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e4e4e7;">
+                <tr>
+                    <td align="center" style="background-color:#6d28d9;padding:32px 24px;">
+                        <span style="font-size:22px;font-weight:bold;color:#ffffff;letter-spacing:1px;">MARTÍNEZ LUNA</span>
+                        <div style="font-size:13px;color:#d8b4fe;margin-top:4px;">Centro Ecuestre · Pistas Valle Perdido</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:32px 32px 16px 32px;">
+                        <h1 style="margin:0 0 12px 0;font-size:20px;color:#18181b;">Confirma tu cuenta</h1>
+                        <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;">
+                            Hola <strong th:text="${name}">usuario</strong>,
+                        </p>
+                        <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#52525b;">
+                            Gracias por registrarte en Martínez Luna. Para activar tu cuenta y poder hacer
+                            reservas, confirma tu dirección de correo con el botón de abajo.
+                        </p>
+                        <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#52525b;">
+                            El enlace es válido durante 24 horas. Si no has sido tú quien se ha registrado,
+                            puedes ignorar este mensaje.
+                        </p>
+                        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+                            <tr>
+                                <td align="center" style="border-radius:8px;background-color:#6d28d9;">
+                                    <a th:href="${link}"
+                                       style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:bold;color:#ffffff;text-decoration:none;border-radius:8px;">
+                                        Confirmar mi cuenta
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                        <p style="margin:0 0 8px 0;font-size:13px;color:#71717a;">Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+                        <p style="margin:0 0 8px 0;font-size:13px;color:#6d28d9;word-break:break-all;" th:text="${link}">https://...</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="background-color:#fafafa;border-top:1px solid #e4e4e7;padding:20px 32px;">
+                        <p style="margin:0;font-size:12px;color:#a1a1aa;line-height:1.5;">
+                            Martínez Luna · Centro Ecuestre<br>
+                            Pistas Valle Perdido · Este es un correo automático, por favor no respondas a este mensaje.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

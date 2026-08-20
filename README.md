@@ -34,7 +34,17 @@ El administrador se configura con `ADMIN_EMAIL` y `ADMIN_PASSWORD`. En producci�
 
 ## Email
 
-Configura `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_AUTH`, `MAIL_STARTTLS`, `MAIL_FROM` y `FRONTEND_URL` mediante variables de entorno.
+El backend envía correos con la **Transactional Email API de Brevo** (POST `/v3/smtp/email`, `BrevoEmailService`):
+
+```
+BREVO_API_KEY=tu_api_key_de_brevo
+MAIL_FROM=martinezluna@pistasvalleperdido.es
+```
+
+- `BREVO_API_KEY`: API key de Brevo (Panel > SMTP & API > API Keys), empieza por `xkeysib-`. Es un secreto: en local se pone en `.env.local`. **Si existe `.env.local`, la aplicación usa solo `.env.local` e ignora `.env`.**
+- **IP autorizada**: la IP desde la que se envía debe estar en Brevo (Panel > Seguridad > IPs autorizadas).
+- `MAIL_FROM`: remitente (email o dominio) verificado en Brevo (Panel > Senders).
+- `MAIL_FROM` y `FRONTEND_URL` se usan para los enlaces de los correos (verificar email / recuperar contraseña). La plantilla de confirmación está en `src/main/resources/templates/email/verification.html`.
 
 ## Verificación
 

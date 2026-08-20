@@ -11,10 +11,18 @@ public final class EnvFileLoader {
     }
 
     public static void load() {
-        load(Path.of(".env"));
+        if (Files.isRegularFile(Path.of(".env.local"))) {
+            load(Path.of(".env.local"), true);
+        } else {
+            load(Path.of(".env"), false);
+        }
     }
 
     static void load(Path path) {
+        load(path, false);
+    }
+
+    static void load(Path path, boolean override) {
         if (!Files.isRegularFile(path)) {
             return;
         }
@@ -22,14 +30,14 @@ public final class EnvFileLoader {
         try {
             List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
             for (String line : lines) {
-                loadLine(line);
+                loadLine(line, override);
             }
         } catch (IOException ignored) {
             // The app can still start with real environment variables or application.yml defaults.
         }
     }
 
-    private static void loadLine(String line) {
+    private static void loadLine(String line, boolean override) {
         String trimmed = line.trim();
         if (trimmed.isEmpty() || trimmed.startsWith("#")) {
             return;
@@ -42,11 +50,13 @@ public final class EnvFileLoader {
 
         String key = trimmed.substring(0, separator).trim();
         String value = trimmed.substring(separator + 1).trim();
-        if (key.isEmpty() || System.getenv(key) != null || System.getProperty(key) != null) {
+        if (key.isEmpty() || System.getenv(key) != null) {
             return;
         }
 
-        System.setProperty(key, unquote(value));
+        if (override || System.getProperty(key) == null) {
+            System.setProperty(key, unquote(value));
+        }
     }
 
     private static String unquote(String value) {

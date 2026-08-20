@@ -22,7 +22,7 @@ public class AuthTokenService {
     @Transactional
     public void sendVerification(CustomerUser user) {
         String token = create(user, TokenType.EMAIL_VERIFICATION);
-        emailService.sendVerification(user.getEmail(), token);
+        emailService.sendVerification(user.getEmail(), user.getFirstName(), token);
     }
 
     @Transactional
