@@ -65,7 +65,7 @@ public class AuthTokenService {
     private AuthToken usable(String value, TokenType type) {
         AuthToken token = tokens.findByTokenAndType(value, type)
             .filter(AuthToken::isUsable)
-            .orElseThrow(() -> new BusinessException("El token no es valido o ha caducado."));
+            .orElseThrow(() -> new BusinessException("El token no es válido o ha caducado."));
         return token;
     }
 }

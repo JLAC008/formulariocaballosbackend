@@ -39,13 +39,13 @@ public class UploadController {
 
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType)) {
-            throw new BusinessException("Solo se permiten imagenes JPG, PNG o WEBP.");
+            throw new BusinessException("Solo se permiten imágenes JPG, PNG o WEBP.");
         }
 
         String filename = UUID.randomUUID() + extensionFor(contentType);
         Path destination = uploadDir.resolve(filename).normalize();
         if (!destination.startsWith(uploadDir)) {
-            throw new BusinessException("Nombre de fichero no valido.");
+            throw new BusinessException("Nombre de fichero no válido.");
         }
 
         try {

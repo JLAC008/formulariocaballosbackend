@@ -57,7 +57,7 @@ public class StripeBonusPaymentService {
     @Transactional
     public BonusCheckoutResponse createCheckout(String email, Integer amount) {
         if (amount == null || amount != bonusPackAmount) {
-            throw new BusinessException("Pack de bonos no valido.");
+            throw new BusinessException("Pack de bonos no válido.");
         }
         ensureStripeConfigured();
 
@@ -139,7 +139,7 @@ public class StripeBonusPaymentService {
             String sessionId = root.path("data").path("object").path("id").asText();
             payments.findById(sessionId).ifPresent(this::complete);
         } catch (Exception ex) {
-            throw new BusinessException("Webhook de Stripe no valido.");
+            throw new BusinessException("Webhook de Stripe no válido.");
         }
     }
 

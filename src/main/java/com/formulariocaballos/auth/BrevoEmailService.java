@@ -60,12 +60,12 @@ public class BrevoEmailService implements EmailService {
         context.setVariable("link", link);
         String html = templateEngine.process("email/reset-password", context);
 
-        sendHtml(email, "", "Restablece tu contrasena", html);
+        sendHtml(email, "", "Restablece tu contraseña", html);
     }
 
     private void sendHtml(String recipient, String name, String subject, String html) {
         if (!StringUtils.hasText(apiKey)) {
-            throw new BusinessException("Brevo no esta configurado.");
+            throw new BusinessException("Brevo no está configurado.");
         }
 
         try {
@@ -93,7 +93,7 @@ public class BrevoEmailService implements EmailService {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 log.error("Brevo rechazó el envío a {} ({}): {}", recipient, response.statusCode(), response.body());
-                throw new BusinessException("Brevo rechazo el envio del correo.");
+                throw new BusinessException("Brevo rechazó el envío del correo.");
             }
         } catch (Exception exception) {
             log.error("No se pudo enviar el correo a {}", recipient, exception);
