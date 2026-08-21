@@ -55,7 +55,12 @@ public class BrevoEmailService implements EmailService {
     @Override
     public void sendPasswordReset(String email, String token) {
         String link = frontendUrl + "/reset-password?token=" + token;
-        sendHtml(email, "", "Restablece tu contrasena", "<p>Restablece tu contrasena: <a href=\"" + link + "\">" + link + "</a></p>");
+
+        Context context = new Context();
+        context.setVariable("link", link);
+        String html = templateEngine.process("email/reset-password", context);
+
+        sendHtml(email, "", "Restablece tu contrasena", html);
     }
 
     private void sendHtml(String recipient, String name, String subject, String html) {
