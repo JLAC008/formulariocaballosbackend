@@ -1,10 +1,12 @@
 package com.formulariocaballos.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.formulariocaballos.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
@@ -57,10 +59,19 @@ public class BrevoEmailService implements EmailService {
     }
 
     private void sendHtml(String recipient, String name, String subject, String html) {
+        if (!StringUtils.hasText(apiKey)) {
+            throw new BusinessException("Brevo no esta configurado.");
+        }
+
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("sender", Map.of("email", from, "name", SENDER_NAME));
-            payload.put("to", List.of(Map.of("email", recipient, "name", name)));
+            Map<String, String> to = new LinkedHashMap<>();
+            to.put("email", recipient);
+            if (StringUtils.hasText(name)) {
+                to.put("name", name);
+            }
+            payload.put("to", List.of(to));
             payload.put("subject", subject);
             payload.put("htmlContent", html);
             payload.put("textContent", stripHtml(html));
@@ -77,9 +88,14 @@ public class BrevoEmailService implements EmailService {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 log.error("Brevo rechazó el envío a {} ({}): {}", recipient, response.statusCode(), response.body());
+                throw new BusinessException("Brevo rechazo el envio del correo.");
             }
         } catch (Exception exception) {
             log.error("No se pudo enviar el correo a {}", recipient, exception);
+            if (exception instanceof BusinessException businessException) {
+                throw businessException;
+            }
+            throw new BusinessException("No se pudo enviar el correo.");
         }
     }
 

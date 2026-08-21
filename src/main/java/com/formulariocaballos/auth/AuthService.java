@@ -82,7 +82,11 @@ public class AuthService {
 
     public void verifyEmail(String token) { authTokenService.verify(token); }
 
-    public void requestPasswordReset(String email) { authTokenService.requestReset(email); }
+    public void requestPasswordReset(String email) {
+        customerUserRepository.findByEmailIgnoreCase(email.trim().toLowerCase())
+            .orElseThrow(() -> new BusinessException("No existe ningun usuario con ese email."));
+        authTokenService.requestReset(email);
+    }
 
     public void resetPassword(String token, String password) { authTokenService.reset(token, password); }
 

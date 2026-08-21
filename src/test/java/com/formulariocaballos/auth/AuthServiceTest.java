@@ -31,4 +31,16 @@ class AuthServiceTest {
         assertThatThrownBy(() -> service.login(new LoginRequest("user@example.com", "ValidPass1")))
             .hasMessageContaining("Credenciales incorrectas");
     }
+
+    @Test
+    void passwordResetReportsUnknownEmail() {
+        CustomerUserRepository users = mock(CustomerUserRepository.class);
+        when(users.findByEmailIgnoreCase("missing@example.com")).thenReturn(Optional.empty());
+
+        AuthService service = new AuthService("admin@example.com", "AdminPass1", users,
+            mock(JwtTokenProvider.class), new BCryptPasswordEncoder(), mock(AuthTokenService.class));
+
+        assertThatThrownBy(() -> service.requestPasswordReset("missing@example.com"))
+            .hasMessageContaining("No existe ningun usuario con ese email");
+    }
 }
