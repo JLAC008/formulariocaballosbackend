@@ -103,12 +103,13 @@ public class BookingService {
     @Transactional
     public BookingResponse updateStatus(Long id, ReservationStatus status) {
         Booking booking = bookings.findById(id).orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
-        if (status == ReservationStatus.CANCELLED && booking.getStatus() != ReservationStatus.CANCELLED) {
+        boolean newlyCancelled = status == ReservationStatus.CANCELLED && booking.getStatus() != ReservationStatus.CANCELLED;
+        if (newlyCancelled) {
             refundBonus(booking);
         }
         booking.setStatus(status);
         booking = bookings.save(booking);
-        if (status == ReservationStatus.CANCELLED) notifications.bookingCancelled(booking);
+        if (newlyCancelled) notifications.bookingCancelled(booking);
         return BookingResponse.from(booking);
     }
 

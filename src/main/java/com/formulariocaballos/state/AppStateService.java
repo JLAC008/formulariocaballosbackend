@@ -4,11 +4,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.formulariocaballos.booking.Booking;
 import com.formulariocaballos.booking.BookingRepository;
+import com.formulariocaballos.booking.ReservationStatus;
 import com.formulariocaballos.customer.CustomerUser;
 import com.formulariocaballos.customer.CustomerUserRepository;
 import com.formulariocaballos.customer.Role;
 import com.formulariocaballos.experience.Experience;
 import com.formulariocaballos.experience.ExperienceRepository;
+import com.formulariocaballos.notification.NotificationService;
 import com.formulariocaballos.state.dto.AppStateDto;
 import com.formulariocaballos.state.dto.BookingDto;
 import com.formulariocaballos.state.dto.CustomerUserDto;
@@ -34,17 +36,20 @@ public class AppStateService {
     private final BookingRepository bookingRepository;
     private final ObjectMapper objectMapper;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notifications;
 
     public AppStateService(CustomerUserRepository customerUserRepository,
                            ExperienceRepository experienceRepository,
                            BookingRepository bookingRepository,
                            ObjectMapper objectMapper,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           NotificationService notifications) {
         this.customerUserRepository = customerUserRepository;
         this.experienceRepository = experienceRepository;
         this.bookingRepository = bookingRepository;
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder;
+        this.notifications = notifications;
     }
 
     public AppStateDto getState() {
@@ -69,28 +74,30 @@ public class AppStateService {
         List<ExperienceDto> experiences = state.experiences() == null ? List.of() : state.experiences();
         List<CustomerUserDto> users = state.users() == null ? List.of() : state.users();
         List<BookingDto> bookings = state.bookingHistory() == null ? List.of() : state.bookingHistory();
-        Map<Long, String> passwordHashesById = customerUserRepository.findAll().stream()
-            .collect(java.util.stream.Collectors.toMap(CustomerUser::getId, CustomerUser::getPasswordHash));
-        Map<String, String> passwordHashesByEmail = customerUserRepository.findAll().stream()
+        List<CustomerUser> existingUsers = customerUserRepository.findAll();
+        Map<Long, CustomerUser> existingUsersById = existingUsers.stream()
+            .collect(java.util.stream.Collectors.toMap(CustomerUser::getId, user -> user));
+        Map<String, String> passwordHashesByEmail = existingUsers.stream()
             .collect(java.util.stream.Collectors.toMap(user -> user.getEmail().toLowerCase(), CustomerUser::getPasswordHash));
+        Map<Long, ReservationStatus> previousBookingStatuses = bookingRepository.findAll().stream()
+            .collect(java.util.stream.Collectors.toMap(Booking::getId, Booking::getStatus));
 
         bookingRepository.deleteAll();
-        customerUserRepository.deleteAll();
         experienceRepository.deleteAll();
         experienceRepository.flush();
-        customerUserRepository.flush();
 
         Map<Long, Experience> experiencesByClientId = experiences.stream()
             .map(this::toExperienceEntity)
             .collect(java.util.stream.Collectors.toMap(Experience::getId, experienceRepository::save));
 
         Map<Long, CustomerUser> usersByClientId = users.stream()
-            .map(user -> toCustomerEntity(user, passwordHashesById, passwordHashesByEmail))
+            .map(user -> toCustomerEntity(user, existingUsersById, passwordHashesByEmail))
             .collect(java.util.stream.Collectors.toMap(CustomerUser::getId, customerUserRepository::save));
 
         bookings.stream()
             .map(booking -> toBookingEntity(booking, usersByClientId, experiencesByClientId))
-            .forEach(bookingRepository::save);
+            .map(bookingRepository::save)
+            .forEach(booking -> notifyIfNewlyCancelled(booking, previousBookingStatuses));
 
         return getState();
     }
@@ -161,14 +168,17 @@ public class AppStateService {
         return experience;
     }
 
-    private CustomerUser toCustomerEntity(CustomerUserDto dto, Map<Long, String> passwordHashesById, Map<String, String> passwordHashesByEmail) {
-        CustomerUser user = new CustomerUser();
-        user.setId(dto.id());
+    private CustomerUser toCustomerEntity(CustomerUserDto dto, Map<Long, CustomerUser> existingUsersById, Map<String, String> passwordHashesByEmail) {
+        CustomerUser user = dto.id() == null ? null : existingUsersById.get(dto.id());
+        if (user == null) {
+            user = new CustomerUser();
+            user.setId(dto.id() == null ? System.currentTimeMillis() : dto.id());
+        }
         user.setFirstName(valueOrDefault(dto.firstName(), ""));
         user.setLastName(valueOrDefault(dto.lastName(), ""));
         user.setPhone(valueOrDefault(dto.phone(), ""));
         user.setEmail(valueOrDefault(dto.email(), ""));
-        user.setPasswordHash(existingPasswordHash(dto, passwordHashesById, passwordHashesByEmail));
+        user.setPasswordHash(existingPasswordHash(dto, user.getPasswordHash(), passwordHashesByEmail));
         user.setRole(parseRole(dto.role()));
         user.setBonuses(dto.bonuses() == null ? 0 : Math.max(0, dto.bonuses()));
         user.setEmailVerified(dto.emailVerified());
@@ -178,8 +188,8 @@ public class AppStateService {
         return user;
     }
 
-    private String existingPasswordHash(CustomerUserDto dto, Map<Long, String> passwordHashesById, Map<String, String> passwordHashesByEmail) {
-        String hash = dto.id() == null ? null : passwordHashesById.get(dto.id());
+    private String existingPasswordHash(CustomerUserDto dto, String currentHash, Map<String, String> passwordHashesByEmail) {
+        String hash = currentHash;
         if (hash == null && dto.email() != null) {
             hash = passwordHashesByEmail.get(dto.email().toLowerCase());
         }
@@ -210,6 +220,13 @@ public class AppStateService {
         booking.setAmount(dto.amount() == null ? java.math.BigDecimal.ZERO : dto.amount());
         booking.setStatus(dto.status() == null ? com.formulariocaballos.booking.ReservationStatus.CONFIRMED : dto.status());
         return booking;
+    }
+
+    private void notifyIfNewlyCancelled(Booking booking, Map<Long, ReservationStatus> previousStatuses) {
+        ReservationStatus previous = previousStatuses.get(booking.getId());
+        if (booking.getStatus() == ReservationStatus.CANCELLED && previous != ReservationStatus.CANCELLED) {
+            notifications.bookingCancelled(booking);
+        }
     }
 
     private LocalDateTime parseDateTime(String value) {

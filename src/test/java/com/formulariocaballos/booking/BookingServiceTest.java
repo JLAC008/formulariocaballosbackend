@@ -112,6 +112,28 @@ class BookingServiceTest {
     }
 
     @Test
+    void doesNotNotifyAgainWhenAlreadyCancelledBookingIsUpdatedToCancelled() {
+        Booking booking = new Booking();
+        booking.setId(21L);
+        booking.setUser(user);
+        booking.setExperience(experience);
+        booking.setType(experience.getType());
+        booking.setTitle(experience.getTitle());
+        booking.setDateKey(LocalDate.of(2026, 9, 1));
+        booking.setHour("11:00");
+        booking.setAmount(experience.getPrice());
+        booking.setPaymentStatus(PaymentStatus.APPROVED);
+        booking.setStatus(ReservationStatus.CANCELLED);
+        when(bookings.findById(21L)).thenReturn(Optional.of(booking));
+        when(bookings.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.updateStatus(21L, ReservationStatus.CANCELLED);
+
+        assertThat(result.status()).isEqualTo(ReservationStatus.CANCELLED);
+        verify(notifications, never()).bookingCancelled(any(Booking.class));
+    }
+
+    @Test
     void rejectsUserBookingAnotherExperienceAtSameDateAndHourBeforeCharging() {
         CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));

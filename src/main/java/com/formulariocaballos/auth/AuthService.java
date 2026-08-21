@@ -96,6 +96,12 @@ public class AuthService {
             .ifPresent(authTokenService::sendVerification);
     }
 
+    public CustomerUserDto me(String email) {
+        CustomerUser user = customerUserRepository.findByEmailIgnoreCase(email.trim().toLowerCase())
+            .orElseThrow(() -> new com.formulariocaballos.exception.ResourceNotFoundException("User not found"));
+        return toDto(user);
+    }
+
     private CustomerUserDto toDto(CustomerUser user) {
         return new CustomerUserDto(
             user.getId(),

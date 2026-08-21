@@ -5,7 +5,9 @@ import com.formulariocaballos.auth.dto.LoginRequest;
 import com.formulariocaballos.auth.dto.RegisterRequest;
 import com.formulariocaballos.auth.dto.ForgotPasswordRequest;
 import com.formulariocaballos.auth.dto.ResetPasswordRequest;
+import com.formulariocaballos.state.dto.CustomerUserDto;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +29,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<CustomerUserDto> me(Authentication authentication) {
+        return ResponseEntity.ok(authService.me(authentication.getName()));
     }
 
     @PostMapping("/register")

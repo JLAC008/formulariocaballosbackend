@@ -1,6 +1,8 @@
 package com.formulariocaballos.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.formulariocaballos.booking.Booking;
+import com.formulariocaballos.customer.CustomerUser;
 import com.formulariocaballos.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +65,25 @@ public class BrevoEmailService implements EmailService {
         sendHtml(email, "", "Restablece tu contraseña", html);
     }
 
+    @Override
+    public void sendBookingCancellation(Booking booking) {
+        CustomerUser user = booking.getUser();
+        if (user == null || !StringUtils.hasText(user.getEmail())) {
+            return;
+        }
+
+        String name = StringUtils.hasText(user.getFirstName()) ? user.getFirstName() : booking.getCustomerName();
+        Context context = new Context();
+        context.setVariable("name", StringUtils.hasText(name) ? name : "cliente");
+        context.setVariable("experienceType", typeLabel(booking.getType()));
+        context.setVariable("title", booking.getTitle());
+        context.setVariable("date", StringUtils.hasText(booking.getDate()) ? booking.getDate() : booking.getDateKey().toString());
+        context.setVariable("hour", booking.getHour());
+        String html = templateEngine.process("email/booking-cancellation", context);
+
+        sendHtml(user.getEmail(), name, "Reserva cancelada - Martínez Luna", html);
+    }
+
     private void sendHtml(String recipient, String name, String subject, String html) {
         if (!StringUtils.hasText(apiKey)) {
             throw new BusinessException("Brevo no está configurado.");
@@ -106,5 +127,9 @@ public class BrevoEmailService implements EmailService {
 
     private String stripHtml(String html) {
         return html.replaceAll("<[^>]*>", " ").replaceAll("\\s+", " ").trim();
+    }
+
+    private String typeLabel(String type) {
+        return "routes".equalsIgnoreCase(type) || "route".equalsIgnoreCase(type) ? "Ruta" : "Clase";
     }
 }
