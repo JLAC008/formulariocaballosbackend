@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.util.List;
 import java.time.LocalDate;
 
@@ -42,6 +43,9 @@ public class BookingService {
         CustomerUser user = user(email);
         if (request.dateKey().isBefore(LocalDate.now())) {
             throw new BusinessException("No se puede reservar una fecha pasada");
+        }
+        if (isWeekend(request.dateKey())) {
+            throw new BusinessException("Las experiencias no están disponibles sábados ni domingos.");
         }
         Experience experience = experiences.findById(request.experienceId())
             .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
@@ -127,6 +131,11 @@ public class BookingService {
 
     private int currentBonuses(CustomerUser user) {
         return user.getBonuses() == null ? 0 : Math.max(0, user.getBonuses());
+    }
+
+    private boolean isWeekend(LocalDate date) {
+        DayOfWeek day = date.getDayOfWeek();
+        return day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY;
     }
 
     private void refundBonus(Booking booking) {
