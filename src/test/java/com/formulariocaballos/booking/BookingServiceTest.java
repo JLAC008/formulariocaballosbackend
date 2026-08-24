@@ -47,7 +47,7 @@ class BookingServiceTest {
         experience.setId(2L);
         experience.setTitle("Trail ride");
         experience.setType("routes");
-        experience.setPrice(new BigDecimal("25.00"));
+        experience.setPrice(BigDecimal.ONE);
         experience.setActive(true);
     }
 
@@ -84,6 +84,24 @@ class BookingServiceTest {
             .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
             .hasMessageContaining("bonos suficientes");
         verifyNoInteractions(payments);
+    }
+
+    @Test
+    void createsBookingWithConfiguredBonusCost() {
+        experience.setPrice(new BigDecimal("2"));
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
+        when(experiences.findById(2L)).thenReturn(Optional.of(experience));
+        when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(false);
+        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(0L);
+        when(payments.charge(new BigDecimal("2"), "mock")).thenReturn(PaymentStatus.APPROVED);
+        when(bookings.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.create("rider@example.com", request);
+
+        assertThat(result.amount()).isEqualTo(new BigDecimal("2"));
+        assertThat(result.remainingBonuses()).isEqualTo(1);
+        assertThat(user.getBonuses()).isEqualTo(1);
     }
 
     @Test

@@ -14,6 +14,8 @@ import com.formulariocaballos.payment.PaymentService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.time.LocalDate;
 
@@ -52,7 +54,8 @@ public class BookingService {
             experience.getId(), request.dateKey(), request.hour(), ReservationStatus.CANCELLED) >= capacityFor(experience)) {
             throw new BusinessException("Esta hora ya tiene el aforo completo.");
         }
-        if (currentBonuses(user) < 1) {
+        int bonusCost = bonusCostFor(experience);
+        if (currentBonuses(user) < bonusCost) {
             throw new BusinessException("No tienes bonos suficientes.");
         }
 
@@ -69,11 +72,11 @@ public class BookingService {
         booking.setCustomerName(request.customerName() == null
             ? user.getFirstName() + " " + user.getLastName() : request.customerName());
         booking.setPhone(request.phone() == null ? user.getPhone() : SpanishPhoneNumber.normalize(request.phone()));
-        booking.setAmount(experience.getPrice());
-        booking.setPaymentStatus(payments.charge(experience.getPrice(), booking.getPayment()));
+        booking.setAmount(BigDecimal.valueOf(bonusCost));
+        booking.setPaymentStatus(payments.charge(BigDecimal.valueOf(bonusCost), booking.getPayment()));
         if (booking.getPaymentStatus() != PaymentStatus.APPROVED) throw new BusinessException("Payment declined");
         booking.setStatus(ReservationStatus.CONFIRMED);
-        user.setBonuses(currentBonuses(user) - 1);
+        user.setBonuses(currentBonuses(user) - bonusCost);
         users.save(user);
         booking = bookings.save(booking);
         notifications.bookingCreated(booking);
@@ -132,7 +135,23 @@ public class BookingService {
             return;
         }
 
-        user.setBonuses(currentBonuses(user) + 1);
+        user.setBonuses(currentBonuses(user) + bookingBonusAmount(booking));
         users.save(user);
+    }
+
+    private int bonusCostFor(Experience experience) {
+        BigDecimal price = experience.getPrice();
+        if (price == null || price.compareTo(BigDecimal.ONE) < 0 || price.compareTo(BigDecimal.TEN) > 0) {
+            return 1;
+        }
+        return price.setScale(0, RoundingMode.UP).intValue();
+    }
+
+    private int bookingBonusAmount(Booking booking) {
+        BigDecimal amount = booking.getAmount();
+        if (amount == null || amount.compareTo(BigDecimal.ONE) < 0 || amount.compareTo(BigDecimal.TEN) > 0) {
+            return 1;
+        }
+        return amount.setScale(0, RoundingMode.UP).intValue();
     }
 }

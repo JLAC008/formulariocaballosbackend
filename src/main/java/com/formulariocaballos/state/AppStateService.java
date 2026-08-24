@@ -160,7 +160,7 @@ public class AppStateService {
         experience.setDescription(valueOrDefault(dto.description(), ""));
         experience.setLevel(valueOrDefault(dto.level(), ""));
         experience.setDuration(valueOrDefault(dto.duration(), ""));
-        experience.setPrice(dto.price() == null ? java.math.BigDecimal.ZERO : dto.price());
+        experience.setPrice(normalizeBonusCost(dto.price()));
         experience.setImage(valueOrDefault(dto.image(), ""));
         experience.setActive(dto.active() == null || dto.active());
         experience.setHours(writeJson(dto.hours() == null ? List.of() : dto.hours()));
@@ -259,5 +259,13 @@ public class AppStateService {
 
     private String valueOrDefault(String value, String fallback) {
         return value == null ? fallback : value;
+    }
+
+    private java.math.BigDecimal normalizeBonusCost(java.math.BigDecimal value) {
+        if (value == null || value.compareTo(java.math.BigDecimal.ONE) < 0 || value.compareTo(java.math.BigDecimal.TEN) > 0) {
+            return java.math.BigDecimal.ONE;
+        }
+
+        return value.setScale(0, java.math.RoundingMode.UP);
     }
 }

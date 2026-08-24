@@ -41,6 +41,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
         log.error("Database constraint violation: {}", ex.getMessage());
+        if (ex.getMessage() != null && ex.getMessage().contains("customer_users_email_key")) {
+            return buildResponse(HttpStatus.CONFLICT, "Ya existe un usuario con ese email.");
+        }
         return buildResponse(HttpStatus.CONFLICT, "Database constraint violation");
     }
 
