@@ -14,6 +14,8 @@ public record ExperienceDto(
     BigDecimal price,
     String image,
     Boolean active,
+    Boolean fridayAvailable,
+    List<String> fridayHours,
     List<String> hours,
     Map<String, String> hourMessages
 ) {}

@@ -1,5 +1,6 @@
 package com.formulariocaballos.booking;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.formulariocaballos.booking.dto.CreateBookingRequest;
 import com.formulariocaballos.customer.CustomerUser;
 import com.formulariocaballos.customer.CustomerUserRepository;
@@ -35,7 +36,7 @@ class BookingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new BookingService(bookings, users, experiences, payments, notifications);
+        service = new BookingService(bookings, users, experiences, payments, notifications, new ObjectMapper());
         user = new CustomerUser();
         user.setId(7L);
         user.setEmail("rider@example.com");
@@ -49,6 +50,7 @@ class BookingServiceTest {
         experience.setType("routes");
         experience.setPrice(BigDecimal.ONE);
         experience.setActive(true);
+        experience.setHours("[\"11:00\"]");
     }
 
     @Test

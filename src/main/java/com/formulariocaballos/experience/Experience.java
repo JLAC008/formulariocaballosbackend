@@ -44,6 +44,12 @@ public class Experience {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @Column(name = "friday_available", nullable = false)
+    private Boolean fridayAvailable = false;
+
+    @Column(name = "friday_hours", nullable = false, columnDefinition = "TEXT")
+    private String fridayHours = "[]";
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String hours = "[]";
 

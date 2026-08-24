@@ -1,0 +1,2 @@
+ALTER TABLE experiences
+    ADD COLUMN IF NOT EXISTS friday_hours TEXT NOT NULL DEFAULT '[]';

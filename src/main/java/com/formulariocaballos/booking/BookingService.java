@@ -1,5 +1,7 @@
 package com.formulariocaballos.booking;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.formulariocaballos.booking.dto.BookingResponse;
 import com.formulariocaballos.booking.dto.CreateBookingRequest;
 import com.formulariocaballos.customer.CustomerUser;
@@ -27,15 +29,17 @@ public class BookingService {
     private final ExperienceRepository experiences;
     private final PaymentService payments;
     private final NotificationService notifications;
+    private final ObjectMapper objectMapper;
 
     public BookingService(BookingRepository bookings, CustomerUserRepository users,
                           ExperienceRepository experiences, PaymentService payments,
-                          NotificationService notifications) {
+                          NotificationService notifications, ObjectMapper objectMapper) {
         this.bookings = bookings;
         this.users = users;
         this.experiences = experiences;
         this.payments = payments;
         this.notifications = notifications;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -50,6 +54,12 @@ public class BookingService {
         Experience experience = experiences.findById(request.experienceId())
             .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
         if (!Boolean.TRUE.equals(experience.getActive())) throw new BusinessException("Experience is not active");
+        if (isFriday(request.dateKey()) && !Boolean.TRUE.equals(experience.getFridayAvailable())) {
+            throw new BusinessException("Esta experiencia no está disponible los viernes.");
+        }
+        if (!experienceHours(experience, request.dateKey()).contains(request.hour())) {
+            throw new BusinessException("Esta experiencia no está disponible en esa hora.");
+        }
         if (bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(
             user.getId(), request.dateKey(), request.hour(), ReservationStatus.CANCELLED)) {
             throw new BusinessException("Ya tienes una reserva para esa fecha y hora.");
@@ -136,6 +146,19 @@ public class BookingService {
     private boolean isWeekend(LocalDate date) {
         DayOfWeek day = date.getDayOfWeek();
         return day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY;
+    }
+
+    private boolean isFriday(LocalDate date) {
+        return date.getDayOfWeek() == DayOfWeek.FRIDAY;
+    }
+
+    private List<String> experienceHours(Experience experience, LocalDate date) {
+        String hours = isFriday(date) ? experience.getFridayHours() : experience.getHours();
+        try {
+            return objectMapper.readValue(hours, new TypeReference<>() {});
+        } catch (Exception ignored) {
+            return List.of();
+        }
     }
 
     private void refundBonus(Booking booking) {
