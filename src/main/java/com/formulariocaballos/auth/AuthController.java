@@ -1,6 +1,7 @@
 package com.formulariocaballos.auth;
 
 import com.formulariocaballos.auth.dto.AuthResponse;
+import com.formulariocaballos.auth.dto.ChangePasswordRequest;
 import com.formulariocaballos.auth.dto.LoginRequest;
 import com.formulariocaballos.auth.dto.RegisterRequest;
 import com.formulariocaballos.auth.dto.ForgotPasswordRequest;
@@ -42,6 +43,13 @@ public class AuthController {
     public ResponseEntity<CustomerUserDto> updateMe(Authentication authentication,
                                                     @Valid @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(authService.updateProfile(authentication.getName(), request));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<Void> changePassword(Authentication authentication,
+                                               @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(authentication.getName(), request);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/register")

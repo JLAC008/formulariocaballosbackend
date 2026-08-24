@@ -1,6 +1,7 @@
 package com.formulariocaballos.auth;
 
 import com.formulariocaballos.auth.dto.AuthResponse;
+import com.formulariocaballos.auth.dto.ChangePasswordRequest;
 import com.formulariocaballos.auth.dto.LoginRequest;
 import com.formulariocaballos.auth.dto.RegisterRequest;
 import com.formulariocaballos.auth.dto.UpdateProfileRequest;
@@ -139,6 +140,21 @@ public class AuthService {
         user.setPhone(SpanishPhoneNumber.normalize(request.phone()));
         user.setUpdatedAt(LocalDateTime.now());
         return toDto(customerUserRepository.save(user));
+    }
+
+    @Transactional
+    public void changePassword(String email, ChangePasswordRequest request) {
+        CustomerUser user = customerUserRepository.findByEmailIgnoreCase(email.trim().toLowerCase())
+            .filter(existing -> existing.isActive() && existing.isEmailVerified())
+            .orElseThrow(() -> new com.formulariocaballos.exception.ResourceNotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BusinessException("La contraseña actual no es correcta.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        user.setUpdatedAt(LocalDateTime.now());
+        customerUserRepository.save(user);
     }
 
     private CustomerUserDto toDto(CustomerUser user) {
