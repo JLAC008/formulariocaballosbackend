@@ -32,6 +32,9 @@ public class StripeBonusPayment {
     @Column(nullable = false)
     private Integer bonuses;
 
+    @Column(name = "bonus_pack_id")
+    private Long bonusPackId;
+
     @Column(name = "amount_cents", nullable = false)
     private Long amountCents;
 

@@ -26,40 +26,32 @@ import java.util.Map;
 public class StripeBonusPaymentService {
     private final CustomerUserRepository users;
     private final StripeBonusPaymentRepository payments;
+    private final BonusPackRepository packs;
     private final ObjectMapper objectMapper;
     private final String stripeSecretKey;
     private final String webhookSecret;
     private final String frontendUrl;
-    private final String currency;
-    private final int bonusPackAmount;
-    private final long bonusPackPriceCents;
 
     public StripeBonusPaymentService(CustomerUserRepository users,
                                      StripeBonusPaymentRepository payments,
+                                     BonusPackRepository packs,
                                      ObjectMapper objectMapper,
                                      @Value("${app.stripe.secret-key}") String stripeSecretKey,
                                      @Value("${app.stripe.webhook-secret}") String webhookSecret,
-                                     @Value("${app.mail.frontend-url}") String frontendUrl,
-                                     @Value("${app.stripe.currency}") String currency,
-                                     @Value("${app.stripe.bonus-pack-amount}") int bonusPackAmount,
-                                     @Value("${app.stripe.bonus-pack-price-cents}") long bonusPackPriceCents) {
+                                     @Value("${app.mail.frontend-url}") String frontendUrl) {
         this.users = users;
         this.payments = payments;
+        this.packs = packs;
         this.objectMapper = objectMapper;
         this.stripeSecretKey = stripeSecretKey;
         this.webhookSecret = webhookSecret;
         this.frontendUrl = frontendUrl;
-        this.currency = currency;
-        this.bonusPackAmount = bonusPackAmount;
-        this.bonusPackPriceCents = bonusPackPriceCents;
     }
 
     @Transactional
-    public BonusCheckoutResponse createCheckout(String email, Integer amount) {
-        if (amount == null || amount != bonusPackAmount) {
-            throw new BusinessException("Pack de bonos no válido.");
-        }
+    public BonusCheckoutResponse createCheckout(String email, Long packId, Integer amount) {
         ensureStripeConfigured();
+        BonusPack pack = selectedPack(packId, amount);
 
         CustomerUser user = users.findByEmailIgnoreCase(email)
             .filter(existing -> existing.isActive())
@@ -74,15 +66,16 @@ public class StripeBonusPaymentService {
                 .setCustomerEmail(user.getEmail())
                 .putAllMetadata(Map.of(
                     "userId", String.valueOf(user.getId()),
-                    "bonuses", String.valueOf(bonusPackAmount)
+                    "bonusPackId", String.valueOf(pack.getId()),
+                    "bonuses", String.valueOf(pack.getBonuses())
                 ))
                 .addLineItem(SessionCreateParams.LineItem.builder()
                     .setQuantity(1L)
                     .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
-                        .setCurrency(currency)
-                        .setUnitAmount(bonusPackPriceCents)
+                        .setCurrency(pack.getCurrency())
+                        .setUnitAmount(pack.getPriceCents())
                         .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
-                            .setName(bonusPackAmount + " bonos Martinez Luna")
+                            .setName(pack.getName())
                             .build())
                         .build())
                     .build())
@@ -92,9 +85,10 @@ public class StripeBonusPaymentService {
             StripeBonusPayment payment = new StripeBonusPayment();
             payment.setSessionId(session.getId());
             payment.setUser(user);
-            payment.setBonuses(bonusPackAmount);
-            payment.setAmountCents(bonusPackPriceCents);
-            payment.setCurrency(currency);
+            payment.setBonusPackId(pack.getId());
+            payment.setBonuses(pack.getBonuses());
+            payment.setAmountCents(pack.getPriceCents());
+            payment.setCurrency(pack.getCurrency());
             payment.setStatus(StripeBonusPaymentStatus.PENDING);
             payments.save(payment);
 
@@ -185,5 +179,20 @@ public class StripeBonusPaymentService {
         if (!StringUtils.hasText(stripeSecretKey)) {
             throw new BusinessException("Stripe no esta configurado.");
         }
+    }
+
+    private BonusPack selectedPack(Long packId, Integer amount) {
+        if (packId != null) {
+            return packs.findById(packId)
+                .filter(pack -> Boolean.TRUE.equals(pack.getActive()))
+                .orElseThrow(() -> new BusinessException("Pack de bonos no válido."));
+        }
+
+        if (amount != null) {
+            return packs.findFirstByBonusesAndActiveTrueOrderByPriceCentsAsc(amount)
+                .orElseThrow(() -> new BusinessException("Pack de bonos no válido."));
+        }
+
+        throw new BusinessException("Selecciona un pack de bonos.");
     }
 }

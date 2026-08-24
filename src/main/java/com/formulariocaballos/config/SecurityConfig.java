@@ -47,6 +47,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/payments/bonuses/webhook").permitAll()
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/experiences").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/bonus-packs").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/state").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/state").hasRole("ADMIN")
                 .anyRequest().authenticated()

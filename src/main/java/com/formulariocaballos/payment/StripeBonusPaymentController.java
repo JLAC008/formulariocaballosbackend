@@ -26,7 +26,7 @@ public class StripeBonusPaymentController {
     @PostMapping("/checkout")
     public ResponseEntity<BonusCheckoutResponse> checkout(Authentication authentication,
                                                           @Valid @RequestBody CreateBonusCheckoutRequest request) {
-        return ResponseEntity.ok(service.createCheckout(authentication.getName(), request.amount()));
+        return ResponseEntity.ok(service.createCheckout(authentication.getName(), request.packId(), request.amount()));
     }
 
     @GetMapping("/status")

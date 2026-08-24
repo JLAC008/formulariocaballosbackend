@@ -45,8 +45,6 @@ app:
     secret-key: ${STRIPE_SECRET_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
     currency: ${STRIPE_CURRENCY:eur}
-    bonus-pack-amount: ${STRIPE_BONUS_PACK_AMOUNT:10}
-    bonus-pack-price-cents: ${STRIPE_BONUS_PACK_PRICE_CENTS:16000}
 server:
   port: ${SERVER_PORT:8081}
 logging:
