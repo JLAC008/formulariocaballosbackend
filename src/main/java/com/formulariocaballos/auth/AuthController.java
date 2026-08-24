@@ -5,10 +5,12 @@ import com.formulariocaballos.auth.dto.LoginRequest;
 import com.formulariocaballos.auth.dto.RegisterRequest;
 import com.formulariocaballos.auth.dto.ForgotPasswordRequest;
 import com.formulariocaballos.auth.dto.ResetPasswordRequest;
+import com.formulariocaballos.auth.dto.UpdateProfileRequest;
 import com.formulariocaballos.state.dto.CustomerUserDto;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,6 +36,12 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<CustomerUserDto> me(Authentication authentication) {
         return ResponseEntity.ok(authService.me(authentication.getName()));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<CustomerUserDto> updateMe(Authentication authentication,
+                                                    @Valid @RequestBody UpdateProfileRequest request) {
+        return ResponseEntity.ok(authService.updateProfile(authentication.getName(), request));
     }
 
     @PostMapping("/register")

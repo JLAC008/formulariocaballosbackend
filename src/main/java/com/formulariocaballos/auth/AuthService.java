@@ -3,6 +3,7 @@ package com.formulariocaballos.auth;
 import com.formulariocaballos.auth.dto.AuthResponse;
 import com.formulariocaballos.auth.dto.LoginRequest;
 import com.formulariocaballos.auth.dto.RegisterRequest;
+import com.formulariocaballos.auth.dto.UpdateProfileRequest;
 import com.formulariocaballos.customer.CustomerUser;
 import com.formulariocaballos.customer.CustomerUserRepository;
 import com.formulariocaballos.customer.Role;
@@ -125,6 +126,19 @@ public class AuthService {
         CustomerUser user = customerUserRepository.findByEmailIgnoreCase(email.trim().toLowerCase())
             .orElseThrow(() -> new com.formulariocaballos.exception.ResourceNotFoundException("User not found"));
         return toDto(user);
+    }
+
+    @Transactional
+    public CustomerUserDto updateProfile(String email, UpdateProfileRequest request) {
+        CustomerUser user = customerUserRepository.findByEmailIgnoreCase(email.trim().toLowerCase())
+            .filter(existing -> existing.isActive() && existing.isEmailVerified())
+            .orElseThrow(() -> new com.formulariocaballos.exception.ResourceNotFoundException("User not found"));
+
+        user.setFirstName(request.firstName().trim().replaceAll("\\s+", " "));
+        user.setLastName(request.lastName().trim().replaceAll("\\s+", " "));
+        user.setPhone(SpanishPhoneNumber.normalize(request.phone()));
+        user.setUpdatedAt(LocalDateTime.now());
+        return toDto(customerUserRepository.save(user));
     }
 
     private CustomerUserDto toDto(CustomerUser user) {
