@@ -6,5 +6,6 @@ public record AuthResponse(
     String token,
     String username,
     String role,
-    CustomerUserDto user
+    CustomerUserDto user,
+    boolean verificationResent
 ) {}

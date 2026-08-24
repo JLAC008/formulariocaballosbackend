@@ -45,7 +45,7 @@ public class AuthService {
         String username = request.email().trim().toLowerCase();
 
         if (adminUsername.equals(username) && passwordEncoder.matches(request.password(), adminPasswordHash)) {
-            return new AuthResponse(jwtTokenProvider.generateToken(username, "ADMIN"), username, "ADMIN", null);
+            return new AuthResponse(jwtTokenProvider.generateToken(username, "ADMIN"), username, "ADMIN", null, false);
         }
 
         CustomerUser user = customerUserRepository.findByEmailIgnoreCase(username)
@@ -53,16 +53,18 @@ public class AuthService {
                 && passwordEncoder.matches(request.password(), existing.getPasswordHash()))
             .orElseThrow(() -> new BusinessException("Credenciales incorrectas."));
 
-        return new AuthResponse(jwtTokenProvider.generateToken(user.getEmail(), user.getRole().name()), user.getEmail(), user.getRole().name(), toDto(user));
+        return new AuthResponse(jwtTokenProvider.generateToken(user.getEmail(), user.getRole().name()), user.getEmail(), user.getRole().name(), toDto(user), false);
     }
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         String email = request.email().trim().toLowerCase();
-        customerUserRepository.findByEmailIgnoreCase(email).ifPresent(user -> {
-            throw new BusinessException("Ya existe un usuario con ese email.");
-        });
+        return customerUserRepository.findByEmailIgnoreCase(email)
+            .map(existing -> resendVerificationForPendingUser(existing, request, email))
+            .orElseGet(() -> createPendingUser(request, email));
+    }
 
+    private AuthResponse createPendingUser(RegisterRequest request, String email) {
         CustomerUser user = new CustomerUser();
         user.setId(System.currentTimeMillis());
         user.setFirstName(request.firstName().trim());
@@ -77,7 +79,30 @@ public class AuthService {
         user = customerUserRepository.save(user);
         authTokenService.sendVerification(user);
 
-        return new AuthResponse(null, user.getEmail(), user.getRole().name(), toDto(user));
+        return new AuthResponse(null, user.getEmail(), user.getRole().name(), toDto(user), false);
+    }
+
+    private AuthResponse resendVerificationForPendingUser(CustomerUser user, RegisterRequest request, String email) {
+        if (user.isEmailVerified()) {
+            throw new BusinessException("Ya existe un usuario con ese email.");
+        }
+
+        user.setFirstName(request.firstName().trim());
+        user.setLastName(request.lastName().trim());
+        user.setPhone(SpanishPhoneNumber.normalize(request.phone()));
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setRole(Role.USER);
+        user.setActive(true);
+        user.setEmailVerified(false);
+        if (user.getCreatedAt() == null) {
+            user.setCreatedAt(LocalDateTime.now());
+        }
+        user.setUpdatedAt(LocalDateTime.now());
+        user = customerUserRepository.save(user);
+        authTokenService.sendVerification(user);
+
+        return new AuthResponse(null, user.getEmail(), user.getRole().name(), toDto(user), true);
     }
 
     public void verifyEmail(String token) { authTokenService.verify(token); }
