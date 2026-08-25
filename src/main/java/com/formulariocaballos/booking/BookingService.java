@@ -70,7 +70,7 @@ public class BookingService {
         }
         int bonusCost = bonusCostFor(experience);
         if (currentBonuses(user) < bonusCost) {
-            throw new BusinessException("No tienes bonos suficientes.");
+            throw new BusinessException("No tienes sesiones suficientes.");
         }
 
         Booking booking = new Booking();

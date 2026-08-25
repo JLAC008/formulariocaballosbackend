@@ -185,14 +185,14 @@ public class StripeBonusPaymentService {
         if (packId != null) {
             return packs.findById(packId)
                 .filter(pack -> Boolean.TRUE.equals(pack.getActive()))
-                .orElseThrow(() -> new BusinessException("Pack de bonos no válido."));
+                .orElseThrow(() -> new BusinessException("Pack de sesiones no válido."));
         }
 
         if (amount != null) {
             return packs.findFirstByBonusesAndActiveTrueOrderByPriceCentsAsc(amount)
-                .orElseThrow(() -> new BusinessException("Pack de bonos no válido."));
+                .orElseThrow(() -> new BusinessException("Pack de sesiones no válido."));
         }
 
-        throw new BusinessException("Selecciona un pack de bonos.");
+        throw new BusinessException("Selecciona un pack de sesiones.");
     }
 }

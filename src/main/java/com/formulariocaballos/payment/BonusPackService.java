@@ -72,12 +72,12 @@ public class BonusPackService {
     }
 
     private BonusPack pack(Long id) {
-        return packs.findById(id).orElseThrow(() -> new ResourceNotFoundException("Pack de bonos no encontrado."));
+        return packs.findById(id).orElseThrow(() -> new ResourceNotFoundException("Pack de sesiones no encontrado."));
     }
 
     private void apply(BonusPack pack, BonusPackRequest request, Long currentId) {
         if (request.bonuses() == null || request.bonuses() < 1) {
-            throw new BusinessException("El pack debe tener al menos un bono.");
+            throw new BusinessException("El pack debe tener al menos una sesión.");
         }
         if (request.priceCents() == null || request.priceCents() < 100) {
             throw new BusinessException("El precio debe ser al menos 1 EUR.");
