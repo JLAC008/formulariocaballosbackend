@@ -1,12 +1,15 @@
 package com.formulariocaballos.customer;
 
 import com.formulariocaballos.customer.dto.AdminCreateUserRequest;
+import com.formulariocaballos.customer.dto.AdminUpdateUserRequest;
 import com.formulariocaballos.exception.BusinessException;
 import com.formulariocaballos.state.dto.CustomerUserDto;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,6 +48,33 @@ public class AdminUserController {
         user.setEmailVerified(true);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
+
+        return toDto(users.save(user));
+    }
+
+    @PutMapping("/{id}")
+    public CustomerUserDto update(@PathVariable Long id, @Valid @RequestBody AdminUpdateUserRequest request) {
+        CustomerUser user = users.findById(id)
+            .orElseThrow(() -> new BusinessException("No se ha encontrado el usuario."));
+        String email = request.email().trim().toLowerCase();
+
+        users.findByEmailIgnoreCase(email)
+            .filter(existing -> !existing.getId().equals(id))
+            .ifPresent(existing -> {
+                throw new BusinessException("Ya existe un usuario con ese email.");
+            });
+
+        user.setFirstName(cleanName(request.firstName()));
+        user.setLastName(cleanName(request.lastName()));
+        user.setPhone(SpanishPhoneNumber.normalize(request.phone()));
+        user.setEmail(email);
+        user.setRole(parseRole(request.role()));
+        user.setBonuses(Math.max(0, request.sessions() == null ? 0 : request.sessions()));
+        user.setActive(request.active() == null || request.active());
+
+        if (request.password() != null && !request.password().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(request.password()));
+        }
 
         return toDto(users.save(user));
     }
