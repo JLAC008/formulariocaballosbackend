@@ -28,7 +28,7 @@ class AuthServiceTest {
         user.setEmailVerified(false);
         when(users.findByEmailIgnoreCase("user@example.com")).thenReturn(Optional.of(user));
 
-        AuthService service = new AuthService("admin@example.com", "AdminPass1", users,
+        AuthService service = new AuthService("admin@example.com", "AdminPass1", true, users,
             mock(JwtTokenProvider.class), new BCryptPasswordEncoder(), mock(AuthTokenService.class));
 
         assertThatThrownBy(() -> service.login(new LoginRequest("user@example.com", "ValidPass1")))
@@ -40,7 +40,7 @@ class AuthServiceTest {
         CustomerUserRepository users = mock(CustomerUserRepository.class);
         when(users.findByEmailIgnoreCase("missing@example.com")).thenReturn(Optional.empty());
 
-        AuthService service = new AuthService("admin@example.com", "AdminPass1", users,
+        AuthService service = new AuthService("admin@example.com", "AdminPass1", true, users,
             mock(JwtTokenProvider.class), new BCryptPasswordEncoder(), mock(AuthTokenService.class));
 
         assertThatThrownBy(() -> service.requestPasswordReset("missing@example.com"))
@@ -54,7 +54,7 @@ class AuthServiceTest {
         when(users.findByEmailIgnoreCase("new@example.com")).thenReturn(Optional.empty());
         when(users.save(any(CustomerUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        AuthService service = new AuthService("admin@example.com", "AdminPass1", users,
+        AuthService service = new AuthService("admin@example.com", "AdminPass1", true, users,
             mock(JwtTokenProvider.class), new BCryptPasswordEncoder(), tokens);
 
         var response = service.register(new RegisterRequest("Ana", "Lopez", "+34600000000", "new@example.com", "ValidPass1"));
@@ -82,7 +82,7 @@ class AuthServiceTest {
         when(users.findByEmailIgnoreCase("pending@example.com")).thenReturn(Optional.of(existing));
         when(users.save(any(CustomerUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        AuthService service = new AuthService("admin@example.com", "AdminPass1", users,
+        AuthService service = new AuthService("admin@example.com", "AdminPass1", true, users,
             mock(JwtTokenProvider.class), new BCryptPasswordEncoder(), tokens);
 
         var response = service.register(new RegisterRequest("Nuevo", "Nombre", "+34611111111", "pending@example.com", "ValidPass1"));
@@ -106,11 +106,29 @@ class AuthServiceTest {
         existing.setEmailVerified(true);
         when(users.findByEmailIgnoreCase("verified@example.com")).thenReturn(Optional.of(existing));
 
-        AuthService service = new AuthService("admin@example.com", "AdminPass1", users,
+        AuthService service = new AuthService("admin@example.com", "AdminPass1", true, users,
             mock(JwtTokenProvider.class), new BCryptPasswordEncoder(), tokens);
 
         assertThatThrownBy(() -> service.register(new RegisterRequest("Ana", "Lopez", "+34600000000", "verified@example.com", "ValidPass1")))
             .hasMessageContaining("Ya existe un usuario con ese email");
+        verify(tokens, never()).sendVerification(any());
+    }
+
+    @Test
+    void registerCreatesVerifiedUserWhenVerificationIsDisabled() {
+        CustomerUserRepository users = mock(CustomerUserRepository.class);
+        AuthTokenService tokens = mock(AuthTokenService.class);
+        when(users.findByEmailIgnoreCase("new@example.com")).thenReturn(Optional.empty());
+        when(users.save(any(CustomerUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AuthService service = new AuthService("admin@example.com", "AdminPass1", false, users,
+            mock(JwtTokenProvider.class), new BCryptPasswordEncoder(), tokens);
+
+        var response = service.register(new RegisterRequest("Ana", "Lopez", "+34600000000", "new@example.com", "ValidPass1"));
+
+        assertThat(response.token()).isNull();
+        assertThat(response.user().emailVerified()).isTrue();
+        assertThat(response.verificationResent()).isFalse();
         verify(tokens, never()).sendVerification(any());
     }
 }

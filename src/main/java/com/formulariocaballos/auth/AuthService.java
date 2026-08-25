@@ -28,9 +28,11 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final AuthTokenService authTokenService;
+    private final boolean emailVerificationRequired;
 
     public AuthService(@Value("${app.admin.username}") String adminUsername,
                        @Value("${app.admin.password}") String adminPassword,
+                       @Value("${app.auth.email-verification-required:true}") boolean emailVerificationRequired,
                        CustomerUserRepository customerUserRepository,
                        JwtTokenProvider jwtTokenProvider,
                        PasswordEncoder passwordEncoder,
@@ -38,6 +40,7 @@ public class AuthService {
         this.adminUsername = adminUsername.trim().toLowerCase();
         this.passwordEncoder = passwordEncoder;
         this.authTokenService = authTokenService;
+        this.emailVerificationRequired = emailVerificationRequired;
         this.adminPasswordHash = passwordEncoder.encode(adminPassword);
         this.customerUserRepository = customerUserRepository;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -76,10 +79,14 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(Role.USER);
         user.setBonuses(0);
+        user.setActive(true);
+        user.setEmailVerified(!emailVerificationRequired);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
         user = customerUserRepository.save(user);
-        authTokenService.sendVerification(user);
+        if (emailVerificationRequired) {
+            authTokenService.sendVerification(user);
+        }
 
         return new AuthResponse(null, user.getEmail(), user.getRole().name(), toDto(user), false);
     }
@@ -96,13 +103,15 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(Role.USER);
         user.setActive(true);
-        user.setEmailVerified(false);
+        user.setEmailVerified(!emailVerificationRequired);
         if (user.getCreatedAt() == null) {
             user.setCreatedAt(LocalDateTime.now());
         }
         user.setUpdatedAt(LocalDateTime.now());
         user = customerUserRepository.save(user);
-        authTokenService.sendVerification(user);
+        if (emailVerificationRequired) {
+            authTokenService.sendVerification(user);
+        }
 
         return new AuthResponse(null, user.getEmail(), user.getRole().name(), toDto(user), true);
     }
