@@ -33,7 +33,7 @@ public class ExperienceController {
     private ExperienceDto toDto(Experience experience) {
         return new ExperienceDto(experience.getId(), experience.getType(), experience.getTitle(),
             experience.getDescription(), experience.getLevel(), experience.getDuration(), experience.getPrice(),
-            experience.getImage(), experience.getActive(), experience.getFridayAvailable(),
+            experience.getCapacity(), experience.getImage(), experience.getActive(), experience.getFridayAvailable(),
             readList(experience.getFridayHours()), readList(experience.getHours()), readMap(experience.getHourMessages()));
     }
 

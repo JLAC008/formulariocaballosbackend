@@ -39,6 +39,9 @@ public class Experience {
     @Column(nullable = false)
     private BigDecimal price = BigDecimal.ZERO;
 
+    @Column(nullable = false)
+    private Integer capacity = 5;
+
     private String image;
 
     @Column(nullable = false)

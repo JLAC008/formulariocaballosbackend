@@ -12,6 +12,7 @@ public record ExperienceDto(
     String level,
     String duration,
     BigDecimal price,
+    Integer capacity,
     String image,
     Boolean active,
     Boolean fridayAvailable,

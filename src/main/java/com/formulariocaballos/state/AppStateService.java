@@ -111,6 +111,7 @@ public class AppStateService {
             experience.getLevel(),
             experience.getDuration(),
             experience.getPrice(),
+            experience.getCapacity(),
             experience.getImage(),
             experience.getActive(),
             experience.getFridayAvailable(),
@@ -163,6 +164,7 @@ public class AppStateService {
         experience.setLevel(valueOrDefault(dto.level(), ""));
         experience.setDuration(valueOrDefault(dto.duration(), ""));
         experience.setPrice(normalizeBonusCost(dto.price()));
+        experience.setCapacity(normalizeCapacity(dto.capacity(), experience.getType()));
         experience.setImage(valueOrDefault(dto.image(), ""));
         experience.setActive(dto.active() == null || dto.active());
         experience.setFridayAvailable(dto.fridayAvailable() != null && dto.fridayAvailable());
@@ -271,5 +273,13 @@ public class AppStateService {
         }
 
         return value.setScale(0, java.math.RoundingMode.UP);
+    }
+
+    private int normalizeCapacity(Integer value, String type) {
+        if (value == null) {
+            return ("routes".equalsIgnoreCase(type) || "route".equalsIgnoreCase(type)) ? 8 : 5;
+        }
+
+        return Math.max(1, Math.min(50, value));
     }
 }

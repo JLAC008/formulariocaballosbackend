@@ -135,8 +135,12 @@ public class BookingService {
     }
 
     private int capacityFor(Experience experience) {
-        String type = experience.getType();
-        return ("routes".equalsIgnoreCase(type) || "route".equalsIgnoreCase(type)) ? 8 : 5;
+        Integer capacity = experience.getCapacity();
+        if (capacity == null || capacity < 1) {
+            String type = experience.getType();
+            return ("routes".equalsIgnoreCase(type) || "route".equalsIgnoreCase(type)) ? 8 : 5;
+        }
+        return capacity;
     }
 
     private int currentBonuses(CustomerUser user) {

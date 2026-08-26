@@ -48,6 +48,7 @@ class BookingServiceTest {
         experience.setId(2L);
         experience.setTitle("Trail ride");
         experience.setType("routes");
+        experience.setCapacity(8);
         experience.setPrice(BigDecimal.ONE);
         experience.setActive(true);
         experience.setHours("[\"11:00\"]");
@@ -183,11 +184,27 @@ class BookingServiceTest {
     @Test
     void rejectsFullLessonAtFiveBookingsBeforeCharging() {
         experience.setType("lessons");
+        experience.setCapacity(5);
         CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
         when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(5L);
+
+        assertThatThrownBy(() -> service.create("rider@example.com", request))
+            .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
+            .hasMessageContaining("aforo completo");
+        verifyNoInteractions(payments);
+    }
+
+    @Test
+    void rejectsBookingAtConfiguredCapacityBeforeCharging() {
+        experience.setCapacity(3);
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
+        when(experiences.findById(2L)).thenReturn(Optional.of(experience));
+        when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
+        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(3L);
 
         assertThatThrownBy(() -> service.create("rider@example.com", request))
             .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
