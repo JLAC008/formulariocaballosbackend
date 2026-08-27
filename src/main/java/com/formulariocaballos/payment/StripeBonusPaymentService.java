@@ -59,16 +59,24 @@ public class StripeBonusPaymentService {
 
         try {
             Stripe.apiKey = stripeSecretKey;
+            Map<String, String> metadata = Map.of(
+                "userId", String.valueOf(user.getId()),
+                "userEmail", user.getEmail(),
+                "bonusPackId", String.valueOf(pack.getId()),
+                "bonuses", String.valueOf(pack.getBonuses()),
+                "packName", pack.getName()
+            );
             SessionCreateParams params = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.PAYMENT)
                 .setSuccessUrl(frontendUrl + "/?stripe_bonus=success&session_id={CHECKOUT_SESSION_ID}")
                 .setCancelUrl(frontendUrl + "/?stripe_bonus=cancel")
                 .setCustomerEmail(user.getEmail())
-                .putAllMetadata(Map.of(
-                    "userId", String.valueOf(user.getId()),
-                    "bonusPackId", String.valueOf(pack.getId()),
-                    "bonuses", String.valueOf(pack.getBonuses())
-                ))
+                .putAllMetadata(metadata)
+                .setPaymentIntentData(SessionCreateParams.PaymentIntentData.builder()
+                    .setDescription("Compra de bono - " + pack.getName() + " - " + user.getEmail())
+                    .setStatementDescriptorSuffix("BONO")
+                    .putAllMetadata(metadata)
+                    .build())
                 .addLineItem(SessionCreateParams.LineItem.builder()
                     .setQuantity(1L)
                     .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
