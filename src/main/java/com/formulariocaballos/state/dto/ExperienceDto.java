@@ -17,6 +17,7 @@ public record ExperienceDto(
     Boolean active,
     Boolean fridayAvailable,
     List<String> fridayHours,
+    Map<String, String> fridayHourMessages,
     List<String> hours,
     Map<String, String> hourMessages
 ) {}

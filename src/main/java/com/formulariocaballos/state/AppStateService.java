@@ -116,6 +116,7 @@ public class AppStateService {
             experience.getActive(),
             experience.getFridayAvailable(),
             readJson(experience.getFridayHours(), new TypeReference<>() {}, List.of()),
+            readJson(experience.getFridayHourMessages(), new TypeReference<>() {}, Map.of()),
             readJson(experience.getHours(), new TypeReference<>() {}, List.of()),
             readJson(experience.getHourMessages(), new TypeReference<>() {}, Map.of())
         );
@@ -169,6 +170,7 @@ public class AppStateService {
         experience.setActive(dto.active() == null || dto.active());
         experience.setFridayAvailable(dto.fridayAvailable() != null && dto.fridayAvailable());
         experience.setFridayHours(writeJson(dto.fridayHours() == null ? List.of() : dto.fridayHours()));
+        experience.setFridayHourMessages(writeJson(dto.fridayHourMessages() == null ? Map.of() : dto.fridayHourMessages()));
         experience.setHours(writeJson(dto.hours() == null ? List.of() : dto.hours()));
         experience.setHourMessages(writeJson(dto.hourMessages() == null ? Map.of() : dto.hourMessages()));
         return experience;

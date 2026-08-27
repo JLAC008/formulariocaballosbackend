@@ -53,6 +53,9 @@ public class Experience {
     @Column(name = "friday_hours", nullable = false, columnDefinition = "TEXT")
     private String fridayHours = "[]";
 
+    @Column(name = "friday_hour_messages", nullable = false, columnDefinition = "TEXT")
+    private String fridayHourMessages = "{}";
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String hours = "[]";
 

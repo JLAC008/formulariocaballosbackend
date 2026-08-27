@@ -34,7 +34,8 @@ public class ExperienceController {
         return new ExperienceDto(experience.getId(), experience.getType(), experience.getTitle(),
             experience.getDescription(), experience.getLevel(), experience.getDuration(), experience.getPrice(),
             experience.getCapacity(), experience.getImage(), experience.getActive(), experience.getFridayAvailable(),
-            readList(experience.getFridayHours()), readList(experience.getHours()), readMap(experience.getHourMessages()));
+            readList(experience.getFridayHours()), readMap(experience.getFridayHourMessages()),
+            readList(experience.getHours()), readMap(experience.getHourMessages()));
     }
 
     private List<String> readList(String value) {
