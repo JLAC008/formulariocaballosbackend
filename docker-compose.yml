@@ -22,8 +22,9 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "8083:8081"
+      - "8083:8083"
     environment:
+      SERVER_PORT: 8083
       DB_HOST: ${DB_HOST:-localhost}
       DB_PORT: ${DB_PORT:-5433}
       DB_NAME: ${DB_NAME:-formulariocaballos}
