@@ -16,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -130,6 +132,31 @@ class BookingServiceTest {
         assertThat(user.getBonuses()).isEqualTo(4);
         verify(users).save(user);
         verify(notifications).bookingCancelled(booking);
+    }
+
+    @Test
+    void rejectsCustomerCancellationInsideThreeHours() {
+        LocalDateTime start = LocalDateTime.now().plusHours(1);
+        Booking booking = new Booking();
+        booking.setId(22L);
+        booking.setUser(user);
+        booking.setExperience(experience);
+        booking.setType(experience.getType());
+        booking.setTitle(experience.getTitle());
+        booking.setDateKey(start.toLocalDate());
+        booking.setHour(start.format(DateTimeFormatter.ofPattern("HH:mm")));
+        booking.setAmount(experience.getPrice());
+        booking.setPaymentStatus(PaymentStatus.APPROVED);
+        booking.setStatus(ReservationStatus.CONFIRMED);
+        when(bookings.findById(22L)).thenReturn(Optional.of(booking));
+
+        assertThatThrownBy(() -> service.cancel("rider@example.com", 22L))
+            .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
+            .hasMessageContaining("3 horas");
+        assertThat(user.getBonuses()).isEqualTo(3);
+        verify(users, never()).save(user);
+        verify(bookings, never()).save(any(Booking.class));
+        verify(notifications, never()).bookingCancelled(any(Booking.class));
     }
 
     @Test

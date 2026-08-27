@@ -21,6 +21,8 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.util.List;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Service
 public class BookingService {
@@ -107,6 +109,9 @@ public class BookingService {
         Booking booking = bookings.findById(id).orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
         if (!booking.getUser().getEmail().equalsIgnoreCase(email)) throw new BusinessException("Booking does not belong to user");
         if (booking.getStatus() == ReservationStatus.CANCELLED) return BookingResponse.from(booking);
+        if (!canCustomerCancel(booking)) {
+            throw new BusinessException("No se puede cancelar una reserva cuando faltan 3 horas o menos para que empiece.");
+        }
         refundBonus(booking);
         booking.setStatus(ReservationStatus.CANCELLED);
         booking = bookings.save(booking);
@@ -154,6 +159,14 @@ public class BookingService {
 
     private boolean isFriday(LocalDate date) {
         return date.getDayOfWeek() == DayOfWeek.FRIDAY;
+    }
+
+    private boolean canCustomerCancel(Booking booking) {
+        return bookingStart(booking).isAfter(LocalDateTime.now().plusHours(3));
+    }
+
+    private LocalDateTime bookingStart(Booking booking) {
+        return LocalDateTime.of(booking.getDateKey(), LocalTime.parse(booking.getHour()));
     }
 
     private List<String> experienceHours(Experience experience, LocalDate date) {
