@@ -44,7 +44,9 @@ public class GlobalExceptionHandler {
         if (ex.getMessage() != null && ex.getMessage().contains("customer_users_email_key")) {
             return buildResponse(HttpStatus.CONFLICT, "Ya existe un usuario con ese email.");
         }
-        if (ex.getMessage() != null && ex.getMessage().contains("bonus_packs_name_lower_key")) {
+        if (ex.getMessage() != null
+            && (ex.getMessage().contains("bonus_packs_name_lower_key")
+                || ex.getMessage().contains("bonus_packs_name_lower_active_key"))) {
             return buildResponse(HttpStatus.CONFLICT, "Ya existe un pack con ese nombre.");
         }
         return buildResponse(HttpStatus.CONFLICT, "Database constraint violation");

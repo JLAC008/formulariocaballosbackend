@@ -22,14 +22,14 @@ public class BonusPackService {
 
     @Transactional(readOnly = true)
     public List<BonusPackResponse> active() {
-        return packs.findByActiveTrueOrderByBonusesAscPriceCentsAsc().stream()
+        return packs.findByActiveTrueAndDeletedFalseOrderByBonusesAscPriceCentsAsc().stream()
             .map(BonusPackResponse::from)
             .toList();
     }
 
     @Transactional(readOnly = true)
     public List<BonusPackResponse> all() {
-        return packs.findAllByOrderByActiveDescBonusesAscPriceCentsAsc().stream()
+        return packs.findByDeletedFalseOrderByActiveDescBonusesAscPriceCentsAsc().stream()
             .map(BonusPackResponse::from)
             .toList();
     }
@@ -53,6 +53,9 @@ public class BonusPackService {
     @Transactional
     public BonusPackResponse toggle(Long id) {
         BonusPack pack = pack(id);
+        if (Boolean.TRUE.equals(pack.getDeleted())) {
+            throw new BusinessException("El pack de sesiones ya está eliminado.");
+        }
         pack.setActive(!Boolean.TRUE.equals(pack.getActive()));
         pack.setUpdatedAt(LocalDateTime.now());
         return BonusPackResponse.from(packs.save(pack));
@@ -62,6 +65,7 @@ public class BonusPackService {
     public void delete(Long id) {
         BonusPack pack = pack(id);
         if (payments.existsByBonusPackId(id)) {
+            pack.setDeleted(true);
             pack.setActive(false);
             pack.setUpdatedAt(LocalDateTime.now());
             packs.save(pack);
@@ -88,8 +92,8 @@ public class BonusPackService {
 
         String name = request.name().trim();
         boolean duplicateName = currentId == null
-            ? packs.existsByNameIgnoreCase(name)
-            : packs.existsByNameIgnoreCaseAndIdNot(name, currentId);
+            ? packs.existsByNameIgnoreCaseAndDeletedFalse(name)
+            : packs.existsByNameIgnoreCaseAndDeletedFalseAndIdNot(name, currentId);
         if (duplicateName) {
             throw new BusinessException("Ya existe un pack con ese nombre.");
         }
@@ -102,6 +106,7 @@ public class BonusPackService {
         pack.setPriceCents(request.priceCents());
         pack.setCurrency(currency);
         pack.setActive(request.active() == null || request.active());
+        pack.setDeleted(false);
         pack.setUpdatedAt(LocalDateTime.now());
     }
 }
