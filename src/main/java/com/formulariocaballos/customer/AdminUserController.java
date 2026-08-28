@@ -1,12 +1,19 @@
 package com.formulariocaballos.customer;
 
+import com.formulariocaballos.auth.AuthTokenRepository;
+import com.formulariocaballos.booking.BookingRepository;
 import com.formulariocaballos.customer.dto.AdminCreateUserRequest;
 import com.formulariocaballos.customer.dto.AdminUpdateUserRequest;
 import com.formulariocaballos.exception.BusinessException;
+import com.formulariocaballos.payment.StripeBonusPaymentRepository;
 import com.formulariocaballos.state.dto.CustomerUserDto;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -21,10 +28,20 @@ import java.time.LocalDateTime;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminUserController {
     private final CustomerUserRepository users;
+    private final AuthTokenRepository authTokens;
+    private final BookingRepository bookings;
+    private final StripeBonusPaymentRepository payments;
     private final PasswordEncoder passwordEncoder;
 
-    public AdminUserController(CustomerUserRepository users, PasswordEncoder passwordEncoder) {
+    public AdminUserController(CustomerUserRepository users,
+                               AuthTokenRepository authTokens,
+                               BookingRepository bookings,
+                               StripeBonusPaymentRepository payments,
+                               PasswordEncoder passwordEncoder) {
         this.users = users;
+        this.authTokens = authTokens;
+        this.bookings = bookings;
+        this.payments = payments;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -77,6 +94,24 @@ public class AdminUserController {
         }
 
         return toDto(users.save(user));
+    }
+
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
+        CustomerUser user = users.findById(id)
+            .orElseThrow(() -> new BusinessException("No se ha encontrado el usuario."));
+
+        if (authentication != null && user.getEmail().equalsIgnoreCase(authentication.getName())) {
+            throw new BusinessException("No puedes eliminar tu propio usuario administrador desde esta sesión.");
+        }
+
+        authTokens.deleteByUserId(id);
+        bookings.deleteByUserId(id);
+        payments.deleteByUserId(id);
+        users.delete(user);
+
+        return ResponseEntity.noContent().build();
     }
 
     private Role parseRole(String role) {
