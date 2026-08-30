@@ -71,6 +71,9 @@ public class Booking {
     @Column(nullable = false)
     private BigDecimal amount = BigDecimal.ZERO;
 
+    @Column(name = "participant_count", nullable = false)
+    private Integer participantCount = 1;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReservationStatus status = ReservationStatus.CONFIRMED;

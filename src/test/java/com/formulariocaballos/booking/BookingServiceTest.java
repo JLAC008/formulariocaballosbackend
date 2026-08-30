@@ -58,11 +58,11 @@ class BookingServiceTest {
 
     @Test
     void createsApprovedBookingAndNotifies() {
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(false);
-        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(0L);
+        when(bookings.sumParticipantsByExperienceIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(0L);
         when(payments.charge(any(), any())).thenReturn(PaymentStatus.APPROVED);
         when(bookings.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -79,11 +79,11 @@ class BookingServiceTest {
     @Test
     void rejectsBookingWithoutBonusesBeforeCharging() {
         user.setBonuses(0);
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
-        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(0L);
+        when(bookings.sumParticipantsByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(0L);
 
         assertThatThrownBy(() -> service.create("rider@example.com", request))
             .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
@@ -94,17 +94,37 @@ class BookingServiceTest {
     @Test
     void createsBookingWithConfiguredBonusCost() {
         experience.setPrice(new BigDecimal("2"));
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(false);
-        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(0L);
+        when(bookings.sumParticipantsByExperienceIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(0L);
         when(payments.charge(new BigDecimal("2"), "mock")).thenReturn(PaymentStatus.APPROVED);
         when(bookings.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var result = service.create("rider@example.com", request);
 
         assertThat(result.amount()).isEqualTo(new BigDecimal("2"));
+        assertThat(result.remainingBonuses()).isEqualTo(1);
+        assertThat(user.getBonuses()).isEqualTo(1);
+    }
+
+    @Test
+    void createsBookingWithGuestAndConsumesAdditionalBonusAndCapacity() {
+        user.setBonuses(3);
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, 1);
+        when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
+        when(experiences.findById(2L)).thenReturn(Optional.of(experience));
+        when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(false);
+        when(bookings.sumParticipantsByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(6L);
+        when(payments.charge(new BigDecimal("2"), "mock")).thenReturn(PaymentStatus.APPROVED);
+        when(bookings.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.create("rider@example.com", request);
+
+        assertThat(result.amount()).isEqualTo(new BigDecimal("2"));
+        assertThat(result.participantCount()).isEqualTo(2);
+        assertThat(result.guestCount()).isEqualTo(1);
         assertThat(result.remainingBonuses()).isEqualTo(1);
         assertThat(user.getBonuses()).isEqualTo(1);
     }
@@ -183,7 +203,7 @@ class BookingServiceTest {
 
     @Test
     void rejectsUserBookingAnotherExperienceAtSameDateAndHourBeforeCharging() {
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(true);
@@ -196,11 +216,11 @@ class BookingServiceTest {
 
     @Test
     void rejectsFullRouteAtEightBookingsBeforeCharging() {
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
-        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(8L);
+        when(bookings.sumParticipantsByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(8L);
 
         assertThatThrownBy(() -> service.create("rider@example.com", request))
             .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
@@ -212,11 +232,11 @@ class BookingServiceTest {
     void rejectsFullLessonAtFiveBookingsBeforeCharging() {
         experience.setType("lessons");
         experience.setCapacity(5);
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
-        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(5L);
+        when(bookings.sumParticipantsByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(5L);
 
         assertThatThrownBy(() -> service.create("rider@example.com", request))
             .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
@@ -227,11 +247,11 @@ class BookingServiceTest {
     @Test
     void rejectsBookingAtConfiguredCapacityBeforeCharging() {
         experience.setCapacity(3);
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
-        when(bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(3L);
+        when(bookings.sumParticipantsByExperienceIdAndDateKeyAndHourAndStatusNot(2L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(3L);
 
         assertThatThrownBy(() -> service.create("rider@example.com", request))
             .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)

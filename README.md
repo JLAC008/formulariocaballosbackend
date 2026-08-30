@@ -10,7 +10,7 @@ Backend Spring Boot para `FormularioCaballosFront`, siguiendo la estructura usad
 docker compose up -d
 ```
 
-La API queda en `http://localhost:8081/api`.
+La API queda en `http://localhost:8083/api`.
 
 ## Endpoints
 
@@ -28,7 +28,7 @@ La API queda en `http://localhost:8081/api`.
 - `GET /api/state`: devuelve usuarios, clases y reservas.
 - `PUT /api/state`: sincroniza el estado completo; requiere rol `ADMIN`.
 
-El frontend está configurado para consumir `http://localhost:8081/api`.
+El frontend está configurado para consumir `http://localhost:8083/api` en local.
 
 El administrador se configura con `ADMIN_EMAIL` y `ADMIN_PASSWORD`. En producción deben definirse obligatoriamente secretos propios.
 
