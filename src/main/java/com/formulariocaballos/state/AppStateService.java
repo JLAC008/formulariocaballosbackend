@@ -152,6 +152,7 @@ public class AppStateService {
             booking.getCustomerName(),
             booking.getPhone(),
             booking.getAmount(),
+            booking.getParticipantCount(),
             booking.getStatus()
         );
     }
@@ -226,8 +227,16 @@ public class AppStateService {
         booking.setCustomerName(valueOrDefault(dto.customerName(), ""));
         booking.setPhone(valueOrDefault(dto.phone(), ""));
         booking.setAmount(dto.amount() == null ? java.math.BigDecimal.ZERO : dto.amount());
+        booking.setParticipantCount(normalizeParticipantCount(dto.participantCount()));
         booking.setStatus(dto.status() == null ? com.formulariocaballos.booking.ReservationStatus.CONFIRMED : dto.status());
         return booking;
+    }
+
+    private int normalizeParticipantCount(Integer participantCount) {
+        if (participantCount == null || participantCount < 1) {
+            return 1;
+        }
+        return Math.min(participantCount, 2);
     }
 
     private void notifyIfNewlyCancelled(Booking booking, Map<Long, ReservationStatus> previousStatuses) {

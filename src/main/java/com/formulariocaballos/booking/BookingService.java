@@ -66,11 +66,13 @@ public class BookingService {
             user.getId(), request.dateKey(), request.hour(), ReservationStatus.CANCELLED)) {
             throw new BusinessException("Ya tienes una reserva para esa fecha y hora.");
         }
-        if (bookings.countByExperienceIdAndDateKeyAndHourAndStatusNot(
-            experience.getId(), request.dateKey(), request.hour(), ReservationStatus.CANCELLED) >= capacityFor(experience)) {
+        int participantCount = participantCount(request);
+        long occupiedPlaces = bookings.sumParticipantsByExperienceIdAndDateKeyAndHourAndStatusNot(
+            experience.getId(), request.dateKey(), request.hour(), ReservationStatus.CANCELLED);
+        if (occupiedPlaces + participantCount > capacityFor(experience)) {
             throw new BusinessException("Esta hora ya tiene el aforo completo.");
         }
-        int bonusCost = bonusCostFor(experience);
+        int bonusCost = bonusCostFor(experience) * participantCount;
         if (currentBonuses(user) < bonusCost) {
             throw new BusinessException("No tienes sesiones suficientes.");
         }
@@ -89,6 +91,7 @@ public class BookingService {
             ? user.getFirstName() + " " + user.getLastName() : request.customerName());
         booking.setPhone(request.phone() == null ? user.getPhone() : SpanishPhoneNumber.normalize(request.phone()));
         booking.setAmount(BigDecimal.valueOf(bonusCost));
+        booking.setParticipantCount(participantCount);
         booking.setPaymentStatus(payments.charge(BigDecimal.valueOf(bonusCost), booking.getPayment()));
         if (booking.getPaymentStatus() != PaymentStatus.APPROVED) throw new BusinessException("Payment declined");
         booking.setStatus(ReservationStatus.CONFIRMED);
@@ -150,6 +153,14 @@ public class BookingService {
 
     private int currentBonuses(CustomerUser user) {
         return user.getBonuses() == null ? 0 : Math.max(0, user.getBonuses());
+    }
+
+    private int participantCount(CreateBookingRequest request) {
+        Integer guestCount = request.guestCount();
+        if (guestCount == null || guestCount < 1) {
+            return 1;
+        }
+        return 2;
     }
 
     private boolean isWeekend(LocalDate date) {

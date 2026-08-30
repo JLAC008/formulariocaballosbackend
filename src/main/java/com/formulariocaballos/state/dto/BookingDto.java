@@ -17,5 +17,6 @@ public record BookingDto(
     String customerName,
     String phone,
     BigDecimal amount,
+    Integer participantCount,
     ReservationStatus status
 ) {}
