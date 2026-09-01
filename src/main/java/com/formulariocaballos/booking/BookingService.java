@@ -62,6 +62,9 @@ public class BookingService {
         if (!experienceHours(experience, request.dateKey()).contains(request.hour())) {
             throw new BusinessException("Esta experiencia no está disponible en esa hora.");
         }
+        if (!canCustomerBook(request.dateKey(), request.hour())) {
+            throw new BusinessException("No se puede reservar una experiencia cuando faltan 2 horas o menos para que empiece.");
+        }
         if (bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(
             user.getId(), request.dateKey(), request.hour(), ReservationStatus.CANCELLED)) {
             throw new BusinessException("Ya tienes una reserva para esa fecha y hora.");
@@ -113,7 +116,7 @@ public class BookingService {
         if (!booking.getUser().getEmail().equalsIgnoreCase(email)) throw new BusinessException("Booking does not belong to user");
         if (booking.getStatus() == ReservationStatus.CANCELLED) return BookingResponse.from(booking);
         if (!canCustomerCancel(booking)) {
-            throw new BusinessException("No se puede cancelar una reserva cuando faltan 3 horas o menos para que empiece.");
+            throw new BusinessException("No se puede cancelar una reserva cuando faltan 2 horas o menos para que empiece.");
         }
         refundBonus(booking);
         booking.setStatus(ReservationStatus.CANCELLED);
@@ -173,11 +176,19 @@ public class BookingService {
     }
 
     private boolean canCustomerCancel(Booking booking) {
-        return bookingStart(booking).isAfter(LocalDateTime.now().plusHours(3));
+        return bookingStart(booking).isAfter(LocalDateTime.now().plusHours(2));
+    }
+
+    private boolean canCustomerBook(LocalDate date, String hour) {
+        return bookingStart(date, hour).isAfter(LocalDateTime.now().plusHours(2));
     }
 
     private LocalDateTime bookingStart(Booking booking) {
-        return LocalDateTime.of(booking.getDateKey(), LocalTime.parse(booking.getHour()));
+        return bookingStart(booking.getDateKey(), booking.getHour());
+    }
+
+    private LocalDateTime bookingStart(LocalDate date, String hour) {
+        return LocalDateTime.of(date, LocalTime.parse(hour));
     }
 
     private List<String> experienceHours(Experience experience, LocalDate date) {

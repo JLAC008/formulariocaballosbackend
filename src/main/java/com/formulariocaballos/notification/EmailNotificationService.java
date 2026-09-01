@@ -14,7 +14,11 @@ public class EmailNotificationService implements NotificationService {
 
     @Override
     public void bookingCreated(Booking booking) {
-        // Reserved for future booking confirmation emails.
+        try {
+            emailService.sendBookingConfirmation(booking);
+        } catch (Exception exception) {
+            log.error("No se pudo enviar el correo de confirmación de la reserva {}", booking.getId(), exception);
+        }
     }
 
     @Override

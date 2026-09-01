@@ -155,7 +155,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void rejectsCustomerCancellationInsideThreeHours() {
+    void rejectsCustomerCancellationInsideTwoHours() {
         LocalDateTime start = LocalDateTime.now().plusHours(1);
         Booking booking = new Booking();
         booking.setId(22L);
@@ -172,7 +172,7 @@ class BookingServiceTest {
 
         assertThatThrownBy(() -> service.cancel("rider@example.com", 22L))
             .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
-            .hasMessageContaining("3 horas");
+            .hasMessageContaining("2 horas");
         assertThat(user.getBonuses()).isEqualTo(3);
         verify(users, never()).save(user);
         verify(bookings, never()).save(any(Booking.class));

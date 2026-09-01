@@ -66,6 +66,20 @@ public class BrevoEmailService implements EmailService {
     }
 
     @Override
+    public void sendBookingConfirmation(Booking booking) {
+        CustomerUser user = booking.getUser();
+        if (user == null || !StringUtils.hasText(user.getEmail())) {
+            return;
+        }
+
+        String name = StringUtils.hasText(user.getFirstName()) ? user.getFirstName() : booking.getCustomerName();
+        Context context = bookingContext(booking, name);
+        String html = templateEngine.process("email/booking-confirmation", context);
+
+        sendHtml(user.getEmail(), name, "Reserva confirmada - Martínez Luna", html);
+    }
+
+    @Override
     public void sendBookingCancellation(Booking booking) {
         CustomerUser user = booking.getUser();
         if (user == null || !StringUtils.hasText(user.getEmail())) {
@@ -73,15 +87,23 @@ public class BrevoEmailService implements EmailService {
         }
 
         String name = StringUtils.hasText(user.getFirstName()) ? user.getFirstName() : booking.getCustomerName();
+        Context context = bookingContext(booking, name);
+        String html = templateEngine.process("email/booking-cancellation", context);
+
+        sendHtml(user.getEmail(), name, "Reserva cancelada - Martínez Luna", html);
+    }
+
+    private Context bookingContext(Booking booking, String name) {
+        int participantCount = booking.getParticipantCount() == null ? 1 : Math.max(1, booking.getParticipantCount());
         Context context = new Context();
         context.setVariable("name", StringUtils.hasText(name) ? name : "cliente");
         context.setVariable("experienceType", typeLabel(booking.getType()));
         context.setVariable("title", booking.getTitle());
         context.setVariable("date", StringUtils.hasText(booking.getDate()) ? booking.getDate() : booking.getDateKey().toString());
         context.setVariable("hour", booking.getHour());
-        String html = templateEngine.process("email/booking-cancellation", context);
-
-        sendHtml(user.getEmail(), name, "Reserva cancelada - Martínez Luna", html);
+        context.setVariable("participantCount", participantCount);
+        context.setVariable("participantLabel", participantCount == 1 ? "1 persona" : participantCount + " personas");
+        return context;
     }
 
     private void sendHtml(String recipient, String name, String subject, String html) {
@@ -132,4 +154,5 @@ public class BrevoEmailService implements EmailService {
     private String typeLabel(String type) {
         return "routes".equalsIgnoreCase(type) || "route".equalsIgnoreCase(type) ? "Ruta" : "Clase";
     }
+
 }
