@@ -28,4 +28,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     boolean existsByUserIdAndDateKeyAndHourAndStatusNot(
         Long userId, java.time.LocalDate dateKey, String hour, ReservationStatus status);
+
+    boolean existsByDateKeyAndStatus(java.time.LocalDate dateKey, ReservationStatus status);
 }

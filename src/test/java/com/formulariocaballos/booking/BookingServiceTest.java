@@ -28,6 +28,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class BookingServiceTest {
     @Mock BookingRepository bookings;
+    @Mock BlockedBookingDateRepository blockedDates;
     @Mock CustomerUserRepository users;
     @Mock ExperienceRepository experiences;
     @Mock PaymentService payments;
@@ -38,7 +39,7 @@ class BookingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new BookingService(bookings, users, experiences, payments, notifications, new ObjectMapper());
+        service = new BookingService(bookings, blockedDates, users, experiences, payments, notifications, new ObjectMapper());
         user = new CustomerUser();
         user.setId(7L);
         user.setEmail("rider@example.com");

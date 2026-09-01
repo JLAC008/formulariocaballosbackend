@@ -27,16 +27,19 @@ import java.time.LocalTime;
 @Service
 public class BookingService {
     private final BookingRepository bookings;
+    private final BlockedBookingDateRepository blockedDates;
     private final CustomerUserRepository users;
     private final ExperienceRepository experiences;
     private final PaymentService payments;
     private final NotificationService notifications;
     private final ObjectMapper objectMapper;
 
-    public BookingService(BookingRepository bookings, CustomerUserRepository users,
+    public BookingService(BookingRepository bookings, BlockedBookingDateRepository blockedDates,
+                          CustomerUserRepository users,
                           ExperienceRepository experiences, PaymentService payments,
                           NotificationService notifications, ObjectMapper objectMapper) {
         this.bookings = bookings;
+        this.blockedDates = blockedDates;
         this.users = users;
         this.experiences = experiences;
         this.payments = payments;
@@ -52,6 +55,9 @@ public class BookingService {
         }
         if (isWeekend(request.dateKey())) {
             throw new BusinessException("Las experiencias no están disponibles sábados ni domingos.");
+        }
+        if (blockedDates.existsById(request.dateKey())) {
+            throw new BusinessException("No se pueden reservar experiencias en esta fecha.");
         }
         Experience experience = experiences.findById(request.experienceId())
             .orElseThrow(() -> new ResourceNotFoundException("Experience not found"));
