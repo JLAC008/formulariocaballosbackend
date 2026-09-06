@@ -43,10 +43,14 @@ app:
     frontend-url: ${FRONTEND_URL:http://localhost:4200}
   upload:
     dir: ${UPLOAD_DIR:uploads}
-  stripe:
-    secret-key: ${STRIPE_SECRET_KEY:}
-    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
-    currency: ${STRIPE_CURRENCY:eur}
+  redsys:
+    merchant-code: ${REDSYS_MERCHANT_CODE:}
+    terminal: ${REDSYS_TERMINAL:001}
+    secret-key: ${REDSYS_SECRET_KEY:}
+    currency: ${REDSYS_CURRENCY:978}
+    transaction-type: ${REDSYS_TRANSACTION_TYPE:0}
+    payment-url: ${REDSYS_PAYMENT_URL:https://sis.redsys.es/sis/realizarPago}
+    notification-url: ${REDSYS_NOTIFICATION_URL:}
 server:
   port: ${SERVER_PORT:8083}
 logging:

@@ -19,11 +19,11 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "stripe_bonus_payments")
-public class StripeBonusPayment {
+@Table(name = "redsys_bonus_payments")
+public class RedsysBonusPayment {
     @Id
-    @Column(name = "session_id", nullable = false)
-    private String sessionId;
+    @Column(name = "order_id", nullable = false)
+    private String orderId;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -43,7 +43,7 @@ public class StripeBonusPayment {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private StripeBonusPaymentStatus status = StripeBonusPaymentStatus.PENDING;
+    private RedsysBonusPaymentStatus status = RedsysBonusPaymentStatus.PENDING;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

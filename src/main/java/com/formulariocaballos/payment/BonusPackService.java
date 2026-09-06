@@ -13,9 +13,9 @@ import java.util.List;
 @Service
 public class BonusPackService {
     private final BonusPackRepository packs;
-    private final StripeBonusPaymentRepository payments;
+    private final RedsysBonusPaymentRepository payments;
 
-    public BonusPackService(BonusPackRepository packs, StripeBonusPaymentRepository payments) {
+    public BonusPackService(BonusPackRepository packs, RedsysBonusPaymentRepository payments) {
         this.packs = packs;
         this.payments = payments;
     }

@@ -9,17 +9,18 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/payments/bonuses")
-public class StripeBonusPaymentController {
-    private final StripeBonusPaymentService service;
+public class RedsysBonusPaymentController {
+    private final RedsysBonusPaymentService service;
 
-    public StripeBonusPaymentController(StripeBonusPaymentService service) {
+    public RedsysBonusPaymentController(RedsysBonusPaymentService service) {
         this.service = service;
     }
 
@@ -31,14 +32,13 @@ public class StripeBonusPaymentController {
 
     @GetMapping("/status")
     public ResponseEntity<BonusPaymentStatusResponse> status(Authentication authentication,
-                                                            @RequestParam String sessionId) {
-        return ResponseEntity.ok(service.refreshStatus(authentication.getName(), sessionId));
+                                                            @RequestParam String orderId) {
+        return ResponseEntity.ok(service.refreshStatus(authentication.getName(), orderId));
     }
 
     @PostMapping("/webhook")
-    public ResponseEntity<Void> webhook(@RequestBody String payload,
-                                        @RequestHeader("Stripe-Signature") String signatureHeader) {
-        service.handleWebhook(payload, signatureHeader);
+    public ResponseEntity<Void> webhook(@RequestParam Map<String, String> params) {
+        service.handleWebhook(params);
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,6 +1,9 @@
 package com.formulariocaballos.payment.dto;
 
 public record BonusCheckoutResponse(
-    String sessionId,
-    String url
+    String orderId,
+    String url,
+    String signatureVersion,
+    String merchantParameters,
+    String signature
 ) {}

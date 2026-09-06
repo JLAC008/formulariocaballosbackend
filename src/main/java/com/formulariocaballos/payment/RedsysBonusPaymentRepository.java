@@ -2,6 +2,6 @@ package com.formulariocaballos.payment;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface StripeBonusPaymentRepository extends JpaRepository<StripeBonusPayment, String> {
+public interface RedsysBonusPaymentRepository extends JpaRepository<RedsysBonusPayment, String> {
     boolean existsByBonusPackId(Long bonusPackId);
 }
