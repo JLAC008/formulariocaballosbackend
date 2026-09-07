@@ -70,6 +70,7 @@ public class AdminUserController {
         user.setEmail(email);
         user.setRole(parseRole(request.role()));
         user.setBonuses(Math.max(0, request.sessions() == null ? 0 : request.sessions()));
+        user.setEmailVerified(request.emailVerified() == null || request.emailVerified());
         user.setActive(request.active() == null || request.active());
 
         if (request.password() != null && !request.password().isBlank()) {

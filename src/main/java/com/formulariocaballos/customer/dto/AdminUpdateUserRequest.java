@@ -15,5 +15,6 @@ public record AdminUpdateUserRequest(
     ) String password,
     @NotBlank String role,
     Integer sessions,
+    Boolean emailVerified,
     Boolean active
 ) {}
