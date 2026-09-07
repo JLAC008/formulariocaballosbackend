@@ -3,6 +3,8 @@ package com.formulariocaballos.auth;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.formulariocaballos.booking.Booking;
 import com.formulariocaballos.customer.CustomerUser;
+import com.formulariocaballos.customer.CustomerUserRepository;
+import com.formulariocaballos.customer.Role;
 import com.formulariocaballos.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,8 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +35,7 @@ public class BrevoEmailService implements EmailService {
 
     private final ObjectMapper objectMapper;
     private final SpringTemplateEngine templateEngine;
+    private final CustomerUserRepository customerUserRepository;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @Value("${app.mail.from}")
@@ -41,6 +46,9 @@ public class BrevoEmailService implements EmailService {
 
     @Value("${app.mail.frontend-url}")
     private String frontendUrl;
+
+    @Value("${app.mail.booking-confirmation-cc:}")
+    private String bookingConfirmationCc;
 
     @Override
     public void sendVerification(String email, String firstName, String token) {
@@ -76,7 +84,7 @@ public class BrevoEmailService implements EmailService {
         Context context = bookingContext(booking, name);
         String html = templateEngine.process("email/booking-confirmation", context);
 
-        sendHtml(user.getEmail(), name, "Reserva confirmada - Martínez Luna", html);
+        sendHtml(user.getEmail(), name, "Reserva confirmada - Martínez Luna", html, bookingConfirmationCcRecipients(user.getEmail()));
     }
 
     @Override
@@ -90,7 +98,7 @@ public class BrevoEmailService implements EmailService {
         Context context = bookingContext(booking, name);
         String html = templateEngine.process("email/booking-cancellation", context);
 
-        sendHtml(user.getEmail(), name, "Reserva cancelada - Martínez Luna", html);
+        sendHtml(user.getEmail(), name, "Reserva cancelada - Martínez Luna", html, bookingConfirmationCcRecipients(user.getEmail()));
     }
 
     private Context bookingContext(Booking booking, String name) {
@@ -107,6 +115,10 @@ public class BrevoEmailService implements EmailService {
     }
 
     private void sendHtml(String recipient, String name, String subject, String html) {
+        sendHtml(recipient, name, subject, html, List.of());
+    }
+
+    private void sendHtml(String recipient, String name, String subject, String html, List<String> ccRecipients) {
         if (!StringUtils.hasText(apiKey)) {
             throw new BusinessException("Brevo no está configurado.");
         }
@@ -120,6 +132,11 @@ public class BrevoEmailService implements EmailService {
                 to.put("name", name);
             }
             payload.put("to", List.of(to));
+            if (!ccRecipients.isEmpty()) {
+                payload.put("cc", ccRecipients.stream()
+                    .map(email -> Map.of("email", email))
+                    .toList());
+            }
             payload.put("subject", subject);
             payload.put("htmlContent", html);
             payload.put("textContent", stripHtml(html));
@@ -145,6 +162,27 @@ public class BrevoEmailService implements EmailService {
             }
             throw new BusinessException("No se pudo enviar el correo.");
         }
+    }
+
+    private List<String> bookingConfirmationCcRecipients(String recipient) {
+        Set<String> emails = new LinkedHashSet<>();
+        customerUserRepository.findByRoleAndActiveTrue(Role.ADMIN).stream()
+            .map(CustomerUser::getEmail)
+            .filter(StringUtils::hasText)
+            .map(String::trim)
+            .filter(email -> !email.equalsIgnoreCase(recipient))
+            .forEach(emails::add);
+
+        if (StringUtils.hasText(bookingConfirmationCc)) {
+            for (String email : bookingConfirmationCc.split(",")) {
+                String trimmed = email.trim();
+                if (StringUtils.hasText(trimmed) && !trimmed.equalsIgnoreCase(recipient)) {
+                    emails.add(trimmed);
+                }
+            }
+        }
+
+        return List.copyOf(emails);
     }
 
     private String stripHtml(String html) {

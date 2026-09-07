@@ -41,6 +41,7 @@ app:
     from: ${MAIL_FROM:no-reply@formulariocaballos.local}
     brevo-api-key: ${BREVO_API_KEY:}
     frontend-url: ${FRONTEND_URL:http://localhost:4200}
+    booking-confirmation-cc: ${BOOKING_CONFIRMATION_CC:${ADMIN_EMAIL:}}
   upload:
     dir: ${UPLOAD_DIR:uploads}
   redsys:
