@@ -1,6 +1,7 @@
 spring:
   docker:
     compose:
+      file: docker-compose.local.yml
       profiles:
         active: local
   application:
@@ -27,6 +28,8 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 app:
+  payment:
+    gateway-enabled: ${PAYMENT_GATEWAY_ENABLED:true}
   admin:
     username: ${ADMIN_EMAIL:admin@example.com}
     password: ${ADMIN_PASSWORD:change-me-in-production}

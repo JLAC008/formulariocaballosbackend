@@ -77,6 +77,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/experiences").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/bonus-packs").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/blocked-dates").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/payments/bonuses/config").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/state").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/state").hasRole("ADMIN")

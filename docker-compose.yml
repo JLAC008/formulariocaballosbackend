@@ -41,6 +41,7 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
       STRIPE_CURRENCY: ${STRIPE_CURRENCY:-eur}
+      PAYMENT_GATEWAY_ENABLED: ${PAYMENT_GATEWAY_ENABLED:-true}
       UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
     volumes:
       - uploads_data:/app/uploads

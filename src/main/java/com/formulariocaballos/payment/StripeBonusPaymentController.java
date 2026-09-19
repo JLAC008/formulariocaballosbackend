@@ -1,6 +1,7 @@
 package com.formulariocaballos.payment;
 
 import com.formulariocaballos.payment.dto.BonusCheckoutResponse;
+import com.formulariocaballos.payment.dto.BonusPaymentConfigResponse;
 import com.formulariocaballos.payment.dto.BonusPaymentStatusResponse;
 import com.formulariocaballos.payment.dto.CreateBonusCheckoutRequest;
 import jakarta.validation.Valid;
@@ -21,6 +22,11 @@ public class StripeBonusPaymentController {
 
     public StripeBonusPaymentController(StripeBonusPaymentService service) {
         this.service = service;
+    }
+
+    @GetMapping("/config")
+    public BonusPaymentConfigResponse config() {
+        return new BonusPaymentConfigResponse(service.isPaymentGatewayEnabled());
     }
 
     @PostMapping("/checkout")

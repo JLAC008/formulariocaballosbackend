@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: formulario-caballos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-formulariocaballos}
+      POSTGRES_USER: ${DB_USER:-formulariocaballos}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-formulariocaballos_secret}
+    ports:
+      - "5433:5432"
+    volumes:
+      - formulario_caballos_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-formulariocaballos} -d ${DB_NAME:-formulariocaballos}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  formulario_caballos_pgdata:

@@ -31,6 +31,7 @@ public class StripeBonusPaymentService {
     private final String stripeSecretKey;
     private final String webhookSecret;
     private final String frontendUrl;
+    private final boolean paymentGatewayEnabled;
 
     public StripeBonusPaymentService(CustomerUserRepository users,
                                      StripeBonusPaymentRepository payments,
@@ -38,7 +39,8 @@ public class StripeBonusPaymentService {
                                      ObjectMapper objectMapper,
                                      @Value("${app.stripe.secret-key}") String stripeSecretKey,
                                      @Value("${app.stripe.webhook-secret}") String webhookSecret,
-                                     @Value("${app.mail.frontend-url}") String frontendUrl) {
+                                     @Value("${app.mail.frontend-url}") String frontendUrl,
+                                     @Value("${app.payment.gateway-enabled:true}") boolean paymentGatewayEnabled) {
         this.users = users;
         this.payments = payments;
         this.packs = packs;
@@ -46,10 +48,14 @@ public class StripeBonusPaymentService {
         this.stripeSecretKey = stripeSecretKey;
         this.webhookSecret = webhookSecret;
         this.frontendUrl = frontendUrl;
+        this.paymentGatewayEnabled = paymentGatewayEnabled;
     }
 
     @Transactional
     public BonusCheckoutResponse createCheckout(String email, Long packId, Integer amount) {
+        if (!paymentGatewayEnabled) {
+            throw new BusinessException("La pasarela de pago está desactivada.");
+        }
         ensureStripeConfigured();
         BonusPack pack = selectedPack(packId, amount);
 
@@ -187,6 +193,10 @@ public class StripeBonusPaymentService {
         if (!StringUtils.hasText(stripeSecretKey)) {
             throw new BusinessException("Stripe no esta configurado.");
         }
+    }
+
+    public boolean isPaymentGatewayEnabled() {
+        return paymentGatewayEnabled;
     }
 
     private BonusPack selectedPack(Long packId, Integer amount) {
