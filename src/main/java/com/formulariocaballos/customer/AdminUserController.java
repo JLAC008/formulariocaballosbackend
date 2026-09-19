@@ -3,6 +3,7 @@ package com.formulariocaballos.customer;
 import com.formulariocaballos.customer.dto.AdminCreateUserRequest;
 import com.formulariocaballos.customer.dto.AdminUpdateUserRequest;
 import com.formulariocaballos.exception.BusinessException;
+import com.formulariocaballos.notification.NotificationService;
 import com.formulariocaballos.state.dto.CustomerUserDto;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,10 +23,13 @@ import java.time.LocalDateTime;
 public class AdminUserController {
     private final CustomerUserRepository users;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notifications;
 
-    public AdminUserController(CustomerUserRepository users, PasswordEncoder passwordEncoder) {
+    public AdminUserController(CustomerUserRepository users, PasswordEncoder passwordEncoder,
+                               NotificationService notifications) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
+        this.notifications = notifications;
     }
 
     @PostMapping
@@ -64,12 +68,15 @@ public class AdminUserController {
                 throw new BusinessException("Ya existe un usuario con ese email.");
             });
 
+        int previousBonuses = user.getBonuses() == null ? 0 : Math.max(0, user.getBonuses());
+        int updatedBonuses = Math.max(0, request.sessions() == null ? 0 : request.sessions());
+
         user.setFirstName(cleanName(request.firstName()));
         user.setLastName(cleanName(request.lastName()));
         user.setPhone(SpanishPhoneNumber.normalize(request.phone()));
         user.setEmail(email);
         user.setRole(parseRole(request.role()));
-        user.setBonuses(Math.max(0, request.sessions() == null ? 0 : request.sessions()));
+        user.setBonuses(updatedBonuses);
         user.setActive(request.active() == null || request.active());
         if (request.emailVerified() != null) {
             user.setEmailVerified(request.emailVerified());
@@ -79,7 +86,11 @@ public class AdminUserController {
             user.setPasswordHash(passwordEncoder.encode(request.password()));
         }
 
-        return toDto(users.save(user));
+        CustomerUser saved = users.save(user);
+        if (updatedBonuses - previousBonuses == 10) {
+            notifications.bonusesAdded(saved, 10);
+        }
+        return toDto(saved);
     }
 
     private Role parseRole(String role) {

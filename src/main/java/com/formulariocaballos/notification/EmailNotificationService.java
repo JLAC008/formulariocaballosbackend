@@ -2,6 +2,7 @@ package com.formulariocaballos.notification;
 
 import com.formulariocaballos.auth.EmailService;
 import com.formulariocaballos.booking.Booking;
+import com.formulariocaballos.customer.CustomerUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,15 @@ public class EmailNotificationService implements NotificationService {
             emailService.sendBookingCancellation(booking);
         } catch (Exception exception) {
             log.error("No se pudo enviar el correo de cancelación de la reserva {}", booking.getId(), exception);
+        }
+    }
+
+    @Override
+    public void bonusesAdded(CustomerUser user, int addedBonuses) {
+        try {
+            emailService.sendBonusesAdded(user, addedBonuses);
+        } catch (Exception exception) {
+            log.error("No se pudo enviar el correo de sesiones disponibles al usuario {}", user.getId(), exception);
         }
     }
 }

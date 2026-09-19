@@ -93,6 +93,23 @@ public class BrevoEmailService implements EmailService {
         sendHtml(user.getEmail(), name, "Reserva cancelada - Martínez Luna", html);
     }
 
+    @Override
+    public void sendBonusesAdded(CustomerUser user, int addedBonuses) {
+        if (user == null || !StringUtils.hasText(user.getEmail())) {
+            return;
+        }
+
+        String name = StringUtils.hasText(user.getFirstName()) ? user.getFirstName() : "cliente";
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("addedBonuses", addedBonuses);
+        context.setVariable("totalBonuses", user.getBonuses());
+        context.setVariable("frontendUrl", frontendUrl);
+        String html = templateEngine.process("email/bonuses-added", context);
+
+        sendHtml(user.getEmail(), name, "Tu bono de 10 clases ya está disponible - Martínez Luna", html);
+    }
+
     private Context bookingContext(Booking booking, String name) {
         int participantCount = booking.getParticipantCount() == null ? 1 : Math.max(1, booking.getParticipantCount());
         Context context = new Context();

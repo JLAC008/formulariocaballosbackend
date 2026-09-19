@@ -1,6 +1,7 @@
 package com.formulariocaballos.customer;
 
 import com.formulariocaballos.customer.dto.AdminUpdateUserRequest;
+import com.formulariocaballos.notification.NotificationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -22,7 +23,9 @@ class AdminUserControllerTest {
         when(users.findByEmailIgnoreCase("pending@example.com")).thenReturn(Optional.of(user));
         when(users.save(user)).thenReturn(user);
 
-        AdminUserController controller = new AdminUserController(users, mock(PasswordEncoder.class));
+        AdminUserController controller = new AdminUserController(
+            users, mock(PasswordEncoder.class), mock(NotificationService.class)
+        );
         AdminUpdateUserRequest request = new AdminUpdateUserRequest(
             "Ana", "López", "+34600000000", "pending@example.com", "", "USER", 3, true, true
         );
@@ -42,7 +45,9 @@ class AdminUserControllerTest {
         when(users.findByEmailIgnoreCase("pending@example.com")).thenReturn(Optional.of(user));
         when(users.save(user)).thenReturn(user);
 
-        AdminUserController controller = new AdminUserController(users, mock(PasswordEncoder.class));
+        AdminUserController controller = new AdminUserController(
+            users, mock(PasswordEncoder.class), mock(NotificationService.class)
+        );
         AdminUpdateUserRequest request = new AdminUpdateUserRequest(
             "Ana", "López", "+34600000000", "pending@example.com", "", "USER", 3, true, null
         );
@@ -50,6 +55,28 @@ class AdminUserControllerTest {
         controller.update(7L, request);
 
         assertThat(user.isEmailVerified()).isFalse();
+    }
+
+    @Test
+    void addingTenSessionsNotifiesTheUser() {
+        CustomerUserRepository users = mock(CustomerUserRepository.class);
+        NotificationService notifications = mock(NotificationService.class);
+        CustomerUser user = pendingUser();
+        when(users.findById(7L)).thenReturn(Optional.of(user));
+        when(users.findByEmailIgnoreCase("pending@example.com")).thenReturn(Optional.of(user));
+        when(users.save(user)).thenReturn(user);
+
+        AdminUserController controller = new AdminUserController(
+            users, mock(PasswordEncoder.class), notifications
+        );
+        AdminUpdateUserRequest request = new AdminUpdateUserRequest(
+            "Ana", "López", "+34600000000", "pending@example.com", "", "USER", 13, true, null
+        );
+
+        controller.update(7L, request);
+
+        assertThat(user.getBonuses()).isEqualTo(13);
+        verify(notifications).bonusesAdded(user, 10);
     }
 
     private CustomerUser pendingUser() {
