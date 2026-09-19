@@ -71,6 +71,9 @@ public class AdminUserController {
         user.setRole(parseRole(request.role()));
         user.setBonuses(Math.max(0, request.sessions() == null ? 0 : request.sessions()));
         user.setActive(request.active() == null || request.active());
+        if (request.emailVerified() != null) {
+            user.setEmailVerified(request.emailVerified());
+        }
 
         if (request.password() != null && !request.password().isBlank()) {
             user.setPasswordHash(passwordEncoder.encode(request.password()));
