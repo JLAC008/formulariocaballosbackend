@@ -15,9 +15,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,10 +38,12 @@ class BookingServiceTest {
     BookingService service;
     CustomerUser user;
     Experience experience;
+    LocalDate bookingDate;
 
     @BeforeEach
     void setUp() {
         service = new BookingService(bookings, blockedDates, users, experiences, payments, notifications, new ObjectMapper());
+        bookingDate = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.TUESDAY));
         user = new CustomerUser();
         user.setId(7L);
         user.setEmail("rider@example.com");
@@ -59,7 +63,7 @@ class BookingServiceTest {
 
     @Test
     void createsApprovedBookingAndNotifies() {
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, bookingDate, "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(false);
@@ -80,7 +84,7 @@ class BookingServiceTest {
     @Test
     void rejectsBookingWithoutBonusesBeforeCharging() {
         user.setBonuses(0);
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, bookingDate, "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
@@ -88,14 +92,14 @@ class BookingServiceTest {
 
         assertThatThrownBy(() -> service.create("rider@example.com", request))
             .isInstanceOf(com.formulariocaballos.exception.BusinessException.class)
-            .hasMessageContaining("bonos suficientes");
+            .hasMessageContaining("sesiones suficientes");
         verifyNoInteractions(payments);
     }
 
     @Test
     void createsBookingWithConfiguredBonusCost() {
         experience.setPrice(new BigDecimal("2"));
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, bookingDate, "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(false);
@@ -113,7 +117,7 @@ class BookingServiceTest {
     @Test
     void createsBookingWithGuestAndConsumesAdditionalBonusAndCapacity() {
         user.setBonuses(3);
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, 1);
+        CreateBookingRequest request = new CreateBookingRequest(2L, bookingDate, "11:00", null, null, null, null, 1);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(any(), any(), any(), any())).thenReturn(false);
@@ -138,7 +142,7 @@ class BookingServiceTest {
         booking.setExperience(experience);
         booking.setType(experience.getType());
         booking.setTitle(experience.getTitle());
-        booking.setDateKey(LocalDate.of(2026, 9, 1));
+        booking.setDateKey(bookingDate);
         booking.setHour("11:00");
         booking.setAmount(experience.getPrice());
         booking.setPaymentStatus(PaymentStatus.APPROVED);
@@ -188,7 +192,7 @@ class BookingServiceTest {
         booking.setExperience(experience);
         booking.setType(experience.getType());
         booking.setTitle(experience.getTitle());
-        booking.setDateKey(LocalDate.of(2026, 9, 1));
+        booking.setDateKey(bookingDate);
         booking.setHour("11:00");
         booking.setAmount(experience.getPrice());
         booking.setPaymentStatus(PaymentStatus.APPROVED);
@@ -204,7 +208,7 @@ class BookingServiceTest {
 
     @Test
     void rejectsUserBookingAnotherExperienceAtSameDateAndHourBeforeCharging() {
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, bookingDate, "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(true);
@@ -217,7 +221,7 @@ class BookingServiceTest {
 
     @Test
     void rejectsFullRouteAtEightBookingsBeforeCharging() {
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, bookingDate, "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
@@ -233,7 +237,7 @@ class BookingServiceTest {
     void rejectsFullLessonAtFiveBookingsBeforeCharging() {
         experience.setType("lessons");
         experience.setCapacity(5);
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, bookingDate, "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
@@ -248,7 +252,7 @@ class BookingServiceTest {
     @Test
     void rejectsBookingAtConfiguredCapacityBeforeCharging() {
         experience.setCapacity(3);
-        CreateBookingRequest request = new CreateBookingRequest(2L, LocalDate.of(2026, 9, 1), "11:00", null, null, null, null, null);
+        CreateBookingRequest request = new CreateBookingRequest(2L, bookingDate, "11:00", null, null, null, null, null);
         when(users.findByEmailIgnoreCase("rider@example.com")).thenReturn(Optional.of(user));
         when(experiences.findById(2L)).thenReturn(Optional.of(experience));
         when(bookings.existsByUserIdAndDateKeyAndHourAndStatusNot(7L, request.dateKey(), request.hour(), ReservationStatus.CANCELLED)).thenReturn(false);
