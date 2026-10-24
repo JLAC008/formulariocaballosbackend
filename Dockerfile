@@ -4,6 +4,7 @@ COPY . .
 RUN mvn -q -DskipTests package
 
 FROM eclipse-temurin:21-jre-alpine
+RUN apk upgrade --no-cache brotli-libs
 WORKDIR /app
 COPY --from=build /app/target/formulario-caballos-backend-1.0.0.jar app.jar
 RUN mkdir -p /app/uploads
